@@ -131,19 +131,24 @@
                 <span x-text="expandedLists.includes(list.id) ? '▲' : '▼'"></span>
               </button>
 
-              <!-- Edit list -->
+              <!-- Edit / Delete list -->
               <button
                 @click="openEditList(list.id)"
-                class="text-gray-300 hover:text-gray-500 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                class="text-gray-400 hover:text-gray-600 text-xs px-1"
                 title="Edit list"
               >✏️</button>
+              <button
+                @click="deleteList(list.id)"
+                class="text-red-300 hover:text-red-500 text-xs px-1"
+                title="Delete list"
+              >🗑</button>
             </div>
 
             <!-- Expanded: items -->
             <template x-if="expandedLists.includes(list.id)">
               <div class="bg-gray-50/70">
                 <template x-for="item in list.items" :key="item.id">
-                  <div class="flex items-center gap-1 pl-8 pr-3 py-1.5 hover:bg-gray-100 group/item">
+                  <div class="flex items-center gap-1 pl-8 pr-3 py-1.5 hover:bg-gray-100">
                     <button
                       @click="flyToItem(item); sidebarOpen = window.innerWidth >= 768"
                       class="flex-1 text-left text-xs text-gray-700 hover:text-blue-600 truncate"
@@ -151,14 +156,14 @@
                     ></button>
                     <button
                       @click="openEditItem(list.id, item.id)"
-                      class="text-gray-300 hover:text-gray-500 text-xs opacity-0 group-hover/item:opacity-100 transition-opacity"
+                      class="text-gray-400 hover:text-gray-600 text-xs px-1"
                       title="Edit place"
                     >✏️</button>
                     <button
                       @click="deleteItem(list.id, item.id)"
-                      class="text-red-300 hover:text-red-500 text-xs opacity-0 group-hover/item:opacity-100 transition-opacity"
+                      class="text-red-300 hover:text-red-500 text-xs px-1"
                       title="Delete place"
-                    >✕</button>
+                    >🗑</button>
                   </div>
                 </template>
 
