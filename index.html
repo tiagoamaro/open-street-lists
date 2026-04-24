@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Open Street Lists</title>
+
+  <!-- Leaflet -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  />
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV/XN2GQnc="
+    crossorigin=""
+  ></script>
+
+  <!-- Leaflet overrides -->
+  <link rel="stylesheet" href="css/leaflet.css" />
+
+  <!-- Tailwind v4 browser build -->
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+</head>
+
+<body x-data="app" class="h-screen flex flex-col bg-gray-50 overflow-hidden">
+
+  <!-- ── Top bar ──────────────────────────────────────────────────── -->
+  <header class="flex items-center justify-between px-4 py-2 bg-white border-b border-gray-200 shadow-sm z-30 flex-shrink-0">
+    <div class="flex items-center gap-3">
+      <!-- Mobile sidebar toggle -->
+      <button
+        @click="sidebarOpen = !sidebarOpen"
+        class="md:hidden p-2 rounded-lg hover:bg-gray-100 text-gray-600"
+        aria-label="Toggle sidebar"
+      >☰</button>
+      <span class="font-semibold text-gray-800 text-sm">📍 Open Street Lists</span>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <!-- Sync status pill -->
+      <span
+        class="hidden sm:inline-flex text-xs px-2 py-1 rounded-full font-medium"
+        :class="syncStatusClass"
+        x-text="syncMessage"
+      ></span>
+
+      <button
+        @click="sync()"
+        :disabled="syncStatus === 'syncing'"
+        class="text-xs px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+      >🔄 Sync</button>
+
+      <button
+        @click="exportJSON()"
+        class="text-xs px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+      >📤 Export</button>
+
+      <button
+        @click="modal = 'settings'"
+        class="text-xs px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+        aria-label="Settings"
+      >⚙️</button>
+    </div>
+  </header>
+
+  <!-- ── Main layout ───────────────────────────────────────────────── -->
+  <div class="flex flex-1 overflow-hidden relative">
+
+    <!-- Sidebar backdrop (mobile only) -->
+    <div
+      x-show="sidebarOpen"
+      @click="sidebarOpen = false"
+      class="fixed inset-0 bg-black/20 z-10 md:hidden"
+    ></div>
+
+    <!-- ── Sidebar ─────────────────────────────────────────────────── -->
+    <aside
+      class="w-72 bg-white border-r border-gray-200 flex flex-col overflow-hidden z-20
+             absolute inset-y-0 left-0 transition-transform duration-200
+             md:relative md:translate-x-0"
+      :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
+    >
+      <!-- Sidebar header -->
+      <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100 flex-shrink-0">
+        <span class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Lists</span>
+        <button
+          @click="openAddList()"
+          class="text-xs px-2.5 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+        >+ Add List</button>
+      </div>
+
+      <!-- List items -->
+      <div class="flex-1 overflow-y-auto">
+        <template x-if="lists.length === 0">
+          <div class="text-center text-gray-400 text-sm py-12 px-6 leading-relaxed">
+            No lists yet.<br />
+            Add one to start saving places.
+          </div>
+        </template>
+
+        <template x-for="list in lists" :key="list.id">
+          <div class="border-b border-gray-100">
+
+            <!-- List row -->
+            <div class="flex items-center gap-2 px-3 py-2.5 hover:bg-gray-50 group">
+              <input
+                type="checkbox"
+                :checked="list.visible"
+                @change="toggleList(list.id)"
+                class="rounded border-gray-300 flex-shrink-0"
+              />
+
+              <!-- Color dot -->
+              <span
+                class="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                :style="`background:${list.color}`"
+              ></span>
+
+              <!-- Name (click = fly to bounds) -->
+              <button
+                @click="flyToList(list.id)"
+                class="flex-1 text-left text-sm font-medium text-gray-800 hover:text-blue-600 truncate"
+              >
+                <span x-text="list.icon"></span>
+                <span x-text="list.name"></span>
+                <span class="text-gray-400 text-xs font-normal ml-1" x-text="`(${list.items.length})`"></span>
+              </button>
+
+              <!-- Expand toggle -->
+              <button
+                @click="toggleExpand(list.id)"
+                class="text-gray-400 hover:text-gray-600 text-xs px-1"
+                :title="expandedLists.includes(list.id) ? 'Collapse' : 'Expand'"
+              >
+                <span x-text="expandedLists.includes(list.id) ? '▲' : '▼'"></span>
+              </button>
+
+              <!-- Edit list -->
+              <button
+                @click="openEditList(list.id)"
+                class="text-gray-300 hover:text-gray-500 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                title="Edit list"
+              >✏️</button>
+            </div>
+
+            <!-- Expanded: items -->
+            <template x-if="expandedLists.includes(list.id)">
+              <div class="bg-gray-50/70">
+                <template x-for="item in list.items" :key="item.id">
+                  <div class="flex items-center gap-1 pl-8 pr-3 py-1.5 hover:bg-gray-100 group/item">
+                    <button
+                      @click="flyToItem(item); sidebarOpen = window.innerWidth >= 768"
+                      class="flex-1 text-left text-xs text-gray-700 hover:text-blue-600 truncate"
+                      x-text="item.name"
+                    ></button>
+                    <button
+                      @click="openEditItem(list.id, item.id)"
+                      class="text-gray-300 hover:text-gray-500 text-xs opacity-0 group-hover/item:opacity-100 transition-opacity"
+                      title="Edit place"
+                    >✏️</button>
+                    <button
+                      @click="deleteItem(list.id, item.id)"
+                      class="text-red-300 hover:text-red-500 text-xs opacity-0 group-hover/item:opacity-100 transition-opacity"
+                      title="Delete place"
+                    >✕</button>
+                  </div>
+                </template>
+
+                <button
+                  @click="openAddItem(list.id)"
+                  class="w-full text-left pl-8 pr-3 py-2 text-xs text-blue-600 hover:bg-gray-100 transition-colors"
+                >+ Add place</button>
+              </div>
+            </template>
+
+          </div>
+        </template>
+      </div>
+    </aside>
+
+    <!-- ── Map ────────────────────────────────────────────────────── -->
+    <div id="map" class="flex-1 z-0"></div>
+  </div>
+
+
+  <!-- ════════════════════════════════════════════════════════════════
+       MODALS
+       ════════════════════════════════════════════════════════════════ -->
+
+  <!-- Settings modal -->
+  <template x-if="modal === 'settings'">
+    <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+        <h2 class="text-base font-semibold text-gray-900 mb-5">Settings</h2>
+
+        <div class="space-y-4">
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-1">
+              GitHub Personal Access Token
+            </label>
+            <input
+              type="password"
+              x-model="formSettings.token"
+              placeholder="ghp_…"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <p class="text-xs text-gray-400 mt-1">
+              Fine-grained PAT with <code class="bg-gray-100 px-1 rounded">gist</code> write scope only.
+            </p>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-1">
+              Gist ID
+            </label>
+            <input
+              type="text"
+              x-model="formSettings.gistId"
+              placeholder="Leave empty to create a new Gist on first sync"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <p x-show="settingsError" x-text="settingsError" class="text-xs text-red-600 bg-red-50 px-3 py-2 rounded-lg"></p>
+          <p x-show="settingsSuccess" x-text="settingsSuccess" class="text-xs text-green-600 bg-green-50 px-3 py-2 rounded-lg"></p>
+        </div>
+
+        <div class="flex justify-end gap-2 mt-6">
+          <button @click="modal = null" class="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+            Cancel
+          </button>
+          <button @click="saveSettings()" class="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+            Connect Gist
+          </button>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <!-- List modal -->
+  <template x-if="modal === 'list'">
+    <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+        <h2 class="text-base font-semibold text-gray-900 mb-5" x-text="editMode ? 'Edit List' : 'New List'"></h2>
+
+        <div class="space-y-4">
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-1">Name</label>
+            <input
+              type="text"
+              x-model="formList.name"
+              @keydown.enter="saveList()"
+              placeholder="e.g. Restaurants"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              autofocus
+            />
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">Icon</label>
+            <div class="flex flex-wrap gap-1.5">
+              <template x-for="emoji in iconOptions" :key="emoji">
+                <button
+                  @click="formList.icon = emoji"
+                  class="text-xl p-1.5 rounded-lg hover:bg-gray-100 border-2 transition-colors"
+                  :class="formList.icon === emoji ? 'border-blue-500 bg-blue-50' : 'border-transparent'"
+                  x-text="emoji"
+                ></button>
+              </template>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-2">Color</label>
+            <div class="flex gap-2 flex-wrap">
+              <template x-for="color in colorOptions" :key="color">
+                <button
+                  @click="formList.color = color"
+                  class="w-7 h-7 rounded-full border-4 transition-all"
+                  :class="formList.color === color ? 'border-gray-800 scale-110' : 'border-white shadow'"
+                  :style="`background:${color}`"
+                ></button>
+              </template>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex justify-between mt-6">
+          <button
+            x-show="editMode"
+            @click="deleteList(editListId)"
+            class="px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+          >Delete List</button>
+
+          <div class="flex gap-2 ml-auto">
+            <button @click="modal = null" class="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+              Cancel
+            </button>
+            <button @click="saveList()" class="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors" x-text="editMode ? 'Save' : 'Add List'">
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <!-- Item (place) modal -->
+  <template x-if="modal === 'item'">
+    <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 max-h-screen overflow-y-auto">
+        <h2 class="text-base font-semibold text-gray-900 mb-5" x-text="editMode ? 'Edit Place' : 'Add Place'"></h2>
+
+        <div class="space-y-4">
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-1">List</label>
+            <select
+              x-model="formItem.listId"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <template x-for="list in lists" :key="list.id">
+                <option :value="list.id" x-text="`${list.icon} ${list.name}`"></option>
+              </template>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-1">Name</label>
+            <input
+              type="text"
+              x-model="formItem.name"
+              placeholder="e.g. Great Sushi Place"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div class="flex gap-3">
+            <div class="flex-1">
+              <label class="block text-xs font-medium text-gray-700 mb-1">Latitude</label>
+              <input
+                type="number"
+                step="any"
+                x-model="formItem.lat"
+                @change="updateGoogleMapsUrl()"
+                placeholder="37.7749"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div class="flex-1">
+              <label class="block text-xs font-medium text-gray-700 mb-1">Longitude</label>
+              <input
+                type="number"
+                step="any"
+                x-model="formItem.lng"
+                @change="updateGoogleMapsUrl()"
+                placeholder="-122.4194"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-1">Notes <span class="text-gray-400 font-normal">(optional)</span></label>
+            <input
+              type="text"
+              x-model="formItem.notes"
+              placeholder="Any notes about this place…"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-1">Google Maps URL</label>
+            <input
+              type="url"
+              x-model="formItem.google_maps_url"
+              placeholder="Auto-generated from coordinates"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <p class="text-xs text-gray-400 mt-1">Auto-generated. Override with a specific business link if needed.</p>
+          </div>
+        </div>
+
+        <div class="flex justify-between mt-6">
+          <button
+            x-show="editMode"
+            @click="deleteItem(formItem.originalListId, editItemId)"
+            class="px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+          >Delete</button>
+
+          <div class="flex gap-2 ml-auto">
+            <button @click="modal = null" class="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+              Cancel
+            </button>
+            <button @click="saveItem()" class="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors" x-text="editMode ? 'Save' : 'Add Place'">
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </template>
+
+
+  <!-- ── Scripts (order matters: our code before Alpine) ──────────── -->
+  <script src="js/gist.js"></script>
+  <script src="js/map.js"></script>
+  <script src="js/app.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3/dist/cdn.min.js"></script>
+</body>
+</html>

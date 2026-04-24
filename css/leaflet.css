@@ -1,0 +1,21 @@
+/* Leaflet-specific overrides — Tailwind handles everything else */
+
+#map {
+  /* Fixes flex child collapsing to zero height */
+  min-height: 0;
+}
+
+.leaflet-container {
+  height: 100%;
+  width: 100%;
+  font-family: inherit;
+}
+
+/* Keep popups above the sidebar z-index (z-20) but below modals (z-50) */
+.leaflet-popup-pane {
+  z-index: 30;
+}
+
+.leaflet-control-container {
+  z-index: 30;
+}
