@@ -36,6 +36,7 @@ document.addEventListener('alpine:init', () => {
 
     // ── Sync ──────────────────────────────────────────────────────────
     syncStatus: 'idle', // idle | syncing | synced | error | dirty | offline
+    syncVersion: 0,
 
     // ── Geolocation ───────────────────────────────────────────────────
     locating: false,
@@ -93,6 +94,7 @@ document.addEventListener('alpine:init', () => {
         try {
           const data = JSON.parse(cachedData);
           this.lists = data.lists || [];
+          this.syncVersion = data.syncVersion || 0;
         } catch (_) { /* ignore corrupt cache */ }
       }
 
@@ -111,7 +113,7 @@ document.addEventListener('alpine:init', () => {
     },
 
     saveLocal() {
-      localStorage.setItem('osl_data', JSON.stringify({ version: 1, lists: this.lists }));
+      localStorage.setItem('osl_data', JSON.stringify({ version: 1, syncVersion: this.syncVersion, lists: this.lists }));
       this.syncStatus = 'dirty';
     },
 
@@ -128,6 +130,7 @@ document.addEventListener('alpine:init', () => {
         this.syncStatus = 'syncing';
         const data = await Gist.load(gistId, token);
         this.lists = data.lists || [];
+        this.syncVersion = data.syncVersion || 0;
         localStorage.setItem('osl_data', JSON.stringify(data));
         this.syncStatus = 'synced';
         this.renderMap();
@@ -143,17 +146,31 @@ document.addEventListener('alpine:init', () => {
 
       try {
         this.syncStatus = 'syncing';
-        const data = { version: 1, lists: this.lists };
 
         if (!gistId) {
+          const data = { version: 1, syncVersion: 1, lists: this.lists };
           const newId = await Gist.create(token, data);
           this.formSettings.gistId = newId;
+          this.syncVersion = 1;
           localStorage.setItem('osl_settings', JSON.stringify(this.formSettings));
+          localStorage.setItem('osl_data', JSON.stringify(data));
         } else {
+          // Pull first; if remote is ahead, adopt remote data before pushing.
+          const remote = await Gist.load(gistId, token);
+          const remoteSyncVersion = remote.syncVersion || 0;
+
+          if (remoteSyncVersion > this.syncVersion) {
+            this.lists = remote.lists || [];
+            this.renderMap();
+          }
+
+          const nextVersion = Math.max(remoteSyncVersion, this.syncVersion) + 1;
+          const data = { version: 1, syncVersion: nextVersion, lists: this.lists };
           await Gist.save(gistId, token, data);
+          this.syncVersion = nextVersion;
+          localStorage.setItem('osl_data', JSON.stringify(data));
         }
 
-        localStorage.setItem('osl_data', JSON.stringify(data));
         this.syncStatus = 'synced';
       } catch (_) {
         this.syncStatus = navigator.onLine ? 'error' : 'offline';
