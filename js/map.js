@@ -119,7 +119,7 @@ const MapController = (() => {
   function flyToBounds(items) {
     if (!items.length) return;
     const bounds = L.latLngBounds(items.map((i) => [i.lat, i.lng]));
-    map.flyToBounds(bounds, { padding: [60, 60], maxZoom: 15 });
+    map.flyToBounds(bounds, { padding: [60, 60], maxZoom: 15, duration: 0.6 });
   }
 
   /**
@@ -128,7 +128,7 @@ const MapController = (() => {
    * @param {number} lng
    */
   function flyTo(lat, lng) {
-    map.flyTo([lat, lng], 15);
+    map.flyTo([lat, lng], 15, { duration: 0.6 });
   }
 
   let searchMarker = null;
