@@ -37,6 +37,9 @@ document.addEventListener('alpine:init', () => {
     // ── Sync ──────────────────────────────────────────────────────────
     syncStatus: 'idle', // idle | syncing | synced | error | dirty | offline
 
+    // ── Geolocation ───────────────────────────────────────────────────
+    locating: false,
+
     // ── Pickers ───────────────────────────────────────────────────────
     iconOptions: [
       '📍','🍽️','🏖️','🛍️','🏛️','🌳','🏠','⭐','❤️','🎯',
@@ -339,18 +342,24 @@ document.addEventListener('alpine:init', () => {
       MapController.flyTo(item.lat, item.lng);
     },
 
-    // ── Export ────────────────────────────────────────────────────────
-    exportJSON() {
-      const blob = new Blob(
-        [JSON.stringify({ version: 1, lists: this.lists }, null, 2)],
-        { type: 'application/json' }
+    // ── Geolocation ───────────────────────────────────────────────────
+    locateMe() {
+      if (!navigator.geolocation) {
+        alert('Geolocation is not supported by your browser.');
+        return;
+      }
+      this.locating = true;
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          MapController.flyTo(pos.coords.latitude, pos.coords.longitude);
+          this.locating = false;
+        },
+        () => {
+          alert('Could not get your location. Check browser permissions.');
+          this.locating = false;
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
       );
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'open-street-lists.json';
-      a.click();
-      URL.revokeObjectURL(url);
     },
   }));
 });

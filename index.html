@@ -45,9 +45,11 @@
       >🔄 Sync</button>
 
       <button
-        @click="exportJSON()"
-        class="text-xs px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-      >📤 Export</button>
+        @click="locateMe()"
+        :disabled="locating"
+        class="text-xs px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 transition-colors"
+        title="Center map on your location"
+      ><span x-text="locating ? '…' : '📍 Locate me'"></span></button>
 
       <button
         @click="modal = 'settings'"
