@@ -112,9 +112,9 @@
                 :style="`background:${list.color}`"
               ></span>
 
-              <!-- Name (click = fly to bounds) -->
+              <!-- Name (click = expand + fly to bounds) -->
               <button
-                @click="flyToList(list.id)"
+                @click="toggleExpand(list.id); flyToList(list.id)"
                 class="flex-1 text-left text-sm font-medium text-gray-800 hover:text-blue-600 truncate"
               >
                 <span x-text="list.icon"></span>
