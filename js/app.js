@@ -40,6 +40,13 @@ document.addEventListener('alpine:init', () => {
     // ── Geolocation ───────────────────────────────────────────────────
     locating: false,
 
+    // ── Place search ──────────────────────────────────────────────────
+    searchQuery: '',
+    searchResults: [],
+    searching: false,
+    searchOpen: false,
+    _searchTimer: null,
+
     // ── Pickers ───────────────────────────────────────────────────────
     iconOptions: [
       '📍','🍽️','🏖️','🛍️','🏛️','🌳','🏠','⭐','❤️','🎯',
@@ -340,6 +347,50 @@ document.addEventListener('alpine:init', () => {
 
     flyToItem(item) {
       MapController.flyTo(item.lat, item.lng);
+    },
+
+    // ── Place search (Nominatim) ──────────────────────────────────────
+    onSearchInput() {
+      clearTimeout(this._searchTimer);
+      if (!this.searchQuery.trim()) {
+        this.searchResults = [];
+        return;
+      }
+      this._searchTimer = setTimeout(() => this.doSearch(), 400);
+    },
+
+    async doSearch() {
+      this.searching = true;
+      try {
+        const q = encodeURIComponent(this.searchQuery.trim());
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=6&addressdetails=0`,
+          { headers: { Accept: 'application/json' } }
+        );
+        this.searchResults = await res.json();
+      } catch (_) {
+        this.searchResults = [];
+      } finally {
+        this.searching = false;
+      }
+    },
+
+    selectSearchResult(result) {
+      const lat = parseFloat(result.lat);
+      const lng = parseFloat(result.lon);
+      MapController.flyTo(lat, lng);
+      MapController.showSearchMarker(lat, lng, result.display_name, (lat, lng) => {
+        MapController.clearSearchMarker();
+        this.openAddItem(null, lat, lng);
+      });
+      this.searchQuery = '';
+      this.searchResults = [];
+    },
+
+    clearSearch() {
+      this.searchQuery = '';
+      this.searchResults = [];
+      MapController.clearSearchMarker();
     },
 
     // ── Geolocation ───────────────────────────────────────────────────

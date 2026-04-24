@@ -174,8 +174,47 @@
       </div>
     </aside>
 
-    <!-- ── Map ────────────────────────────────────────────────────── -->
-    <div id="map" class="flex-1 z-0"></div>
+    <!-- ── Map + search overlay ──────────────────────────────────── -->
+    <div class="flex-1 relative z-0">
+      <div id="map" class="absolute inset-0"></div>
+
+      <!-- Search widget — top-right of map -->
+      <div class="absolute top-3 right-3 z-[1000] flex flex-col items-end gap-1" @click.outside="searchResults = []">
+        <div class="flex items-center gap-1 bg-white rounded-xl shadow-md px-2 py-1.5">
+          <input
+            type="search"
+            autocomplete="off"
+            x-model="searchQuery"
+            @input="onSearchInput()"
+            @keydown.escape="clearSearch()"
+            placeholder="Search places…"
+            class="text-sm outline-none w-44 sm:w-56 placeholder-gray-400"
+          >
+          <span x-show="searching" class="text-gray-400 text-xs">…</span>
+          <button
+            x-show="searchQuery"
+            @click="clearSearch()"
+            class="text-gray-400 hover:text-gray-600 text-xs leading-none"
+            aria-label="Clear search"
+          >✕</button>
+          <span class="text-gray-400 text-sm select-none">🔍</span>
+        </div>
+
+        <!-- Results dropdown -->
+        <div
+          x-show="searchResults.length > 0"
+          class="bg-white rounded-xl shadow-xl w-72 sm:w-80 overflow-hidden"
+        >
+          <template x-for="result in searchResults" :key="result.place_id">
+            <button
+              @click="selectSearchResult(result)"
+              class="w-full text-left px-4 py-2.5 text-xs text-gray-700 hover:bg-blue-50 border-b border-gray-100 last:border-0 leading-snug"
+              x-text="result.display_name"
+            ></button>
+          </template>
+        </div>
+      </div>
+    </div>
   </div>
 
 

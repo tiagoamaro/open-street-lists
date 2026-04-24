@@ -131,5 +131,51 @@ const MapController = (() => {
     map.flyTo([lat, lng], 15);
   }
 
-  return { init, renderMarkers, flyToBounds, flyTo };
+  let searchMarker = null;
+
+  /**
+   * Places a distinct orange marker at a search result location.
+   * The popup includes an "Add to list" button that triggers the callback.
+   * @param {number} lat
+   * @param {number} lng
+   * @param {string} name
+   * @param {function} onAdd  called with (lat, lng) when user clicks "Add to list"
+   */
+  function showSearchMarker(lat, lng, name, onAdd) {
+    clearSearchMarker();
+
+    searchMarker = L.circleMarker([lat, lng], {
+      color: '#f97316',
+      fillColor: '#f97316',
+      fillOpacity: 0.9,
+      radius: 10,
+      weight: 3,
+    }).addTo(map);
+
+    const popup = L.popup({ offset: [0, -5] }).setContent(`
+      <div style="min-width:180px;font-family:sans-serif">
+        <p style="font-weight:600;font-size:13px;margin:0 0 8px">${escapeHtml(name)}</p>
+        <button id="osl-search-add"
+          style="background:#3b82f6;color:#fff;padding:4px 12px;border-radius:6px;font-size:12px;border:none;cursor:pointer;width:100%">
+          + Add to list
+        </button>
+      </div>`);
+
+    searchMarker.bindPopup(popup).openPopup();
+
+    searchMarker.on('popupopen', () => {
+      document.getElementById('osl-search-add')
+        ?.addEventListener('click', () => onAdd(lat, lng));
+    });
+  }
+
+  /** Removes the search result marker from the map. */
+  function clearSearchMarker() {
+    if (searchMarker) {
+      map.removeLayer(searchMarker);
+      searchMarker = null;
+    }
+  }
+
+  return { init, renderMarkers, flyToBounds, flyTo, showSearchMarker, clearSearchMarker };
 })();
