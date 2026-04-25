@@ -95,6 +95,7 @@ document.addEventListener('alpine:init', () => {
           const data = JSON.parse(cachedData);
           this.lists = data.lists || [];
           this.syncVersion = data.syncVersion || 0;
+          this.sortAllLists();
         } catch (_) { /* ignore corrupt cache */ }
       }
 
@@ -110,6 +111,20 @@ document.addEventListener('alpine:init', () => {
     // ── Internal helpers ──────────────────────────────────────────────
     settings() {
       return JSON.parse(localStorage.getItem('osl_settings') || '{}');
+    },
+
+    /** Sorts a list's items newest-first in place. Items without created_at sort last. */
+    sortItems(list) {
+      list.items.sort((a, b) => {
+        if (!a.created_at && !b.created_at) return 0;
+        if (!a.created_at) return 1;
+        if (!b.created_at) return -1;
+        return b.created_at.localeCompare(a.created_at);
+      });
+    },
+
+    sortAllLists() {
+      this.lists.forEach((l) => this.sortItems(l));
     },
 
     saveLocal() {
@@ -131,6 +146,7 @@ document.addEventListener('alpine:init', () => {
         const data = await Gist.load(gistId, token);
         this.lists = data.lists || [];
         this.syncVersion = data.syncVersion || 0;
+        this.sortAllLists();
         localStorage.setItem('osl_data', JSON.stringify(data));
         this.syncStatus = 'synced';
         this.renderMap();
@@ -161,6 +177,7 @@ document.addEventListener('alpine:init', () => {
 
           if (remoteSyncVersion > this.syncVersion) {
             this.lists = remote.lists || [];
+            this.sortAllLists();
             this.renderMap();
           }
 
@@ -328,6 +345,14 @@ document.addEventListener('alpine:init', () => {
       const { name, lat, lng } = this.formItem;
       if (!name.trim() || lat === '' || lng === '') return;
 
+      // Preserve created_at on edit; stamp now on create.
+      let createdAt = new Date().toISOString();
+      if (this.editMode) {
+        const origList = this.lists.find((l) => l.id === this.formItem.originalListId);
+        const existing = origList?.items.find((i) => i.id === this.editItemId);
+        if (existing?.created_at) createdAt = existing.created_at;
+      }
+
       const item = {
         id: this.editItemId || crypto.randomUUID(),
         name: name.trim(),
@@ -337,6 +362,7 @@ document.addEventListener('alpine:init', () => {
         google_maps_url:
           this.formItem.google_maps_url.trim() ||
           `https://maps.google.com/?q=${lat},${lng}`,
+        created_at: createdAt,
       };
 
       if (this.editMode) {
@@ -346,7 +372,10 @@ document.addEventListener('alpine:init', () => {
       }
 
       const targetList = this.lists.find((l) => l.id === this.formItem.listId);
-      if (targetList) targetList.items.push(item);
+      if (targetList) {
+        targetList.items.push(item);
+        this.sortItems(targetList);
+      }
 
       this.modal = null;
       this.saveLocal();

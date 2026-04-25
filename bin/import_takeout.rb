@@ -21,6 +21,7 @@ require 'net/http'
 require 'uri'
 require 'cgi'
 require 'securerandom'
+require 'time'
 
 COLORS = %w[
   #3b82f6 #ef4444 #10b981 #f59e0b #8b5cf6
@@ -104,7 +105,8 @@ def convert_json_feature(feature)
     lat:             lat,
     lng:             lng,
     notes:           location['address'] || '',
-    google_maps_url: props['google_maps_url'] || "https://maps.google.com/?q=#{lat},#{lng}" }
+    google_maps_url: props['google_maps_url'] || "https://maps.google.com/?q=#{lat},#{lng}",
+    created_at:      props['date'] || Time.now.utc.iso8601 }
 end
 
 # Converts a Takeout JSON file (GeoJSON FeatureCollection) to a list hash.
@@ -146,7 +148,7 @@ def convert_csv_row(row, allow_geocode:)
     lat, lng = coords
     name = (title.nil? || title.empty? || GENERIC_TITLES.include?(title.downcase)) ? 'Dropped pin' : title
     return { id: SecureRandom.uuid, name: name, lat: lat, lng: lng,
-             notes: note, google_maps_url: url }
+             notes: note, google_maps_url: url, created_at: Time.now.utc.iso8601 }
   end
 
   # 2. Place URL — need a name to geocode
@@ -160,7 +162,7 @@ def convert_csv_row(row, allow_geocode:)
       lat, lng = coords
       puts "#{lat}, #{lng}"
       return { id: SecureRandom.uuid, name: name, lat: lat, lng: lng,
-               notes: note, google_maps_url: url }
+               notes: note, google_maps_url: url, created_at: Time.now.utc.iso8601 }
     else
       puts 'not found, skipped'
       return nil
