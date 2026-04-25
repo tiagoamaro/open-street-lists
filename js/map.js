@@ -113,38 +113,42 @@ const MapController = (() => {
   let searchMarker = null;
 
   /**
-   * Places a distinct orange marker at a search result location.
-   * The popup includes an "Add to list" button that triggers the callback.
+   * Builds the orange "+" pin icon used for search result markers.
+   * @returns {L.DivIcon}
+   */
+  function buildSearchPinIcon() {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="38" viewBox="0 0 28 38">
+      <path d="M14 1 C7.37 1 2 6.37 2 13 C2 22 14 37 14 37 C14 37 26 22 26 13 C26 6.37 20.63 1 14 1Z"
+            fill="#f97316" stroke="white" stroke-width="2"/>
+      <circle cx="14" cy="13" r="9" fill="white"/>
+      <text x="14" y="14" text-anchor="middle" dominant-baseline="middle" font-size="16" font-weight="bold" fill="#f97316">+</text>
+    </svg>`;
+
+    return L.divIcon({
+      html: svg,
+      className: 'osl-pin-marker',
+      iconSize: [28, 38],
+      iconAnchor: [14, 37],
+      popupAnchor: [0, -38],
+    });
+  }
+
+  /**
+   * Places an orange "+" pin at a search result location.
+   * Clicking the pin directly triggers the add-to-list callback.
    * @param {number} lat
    * @param {number} lng
    * @param {string} name
-   * @param {function} onAdd  called with (lat, lng) when user clicks "Add to list"
+   * @param {function} onAdd  called with (lat, lng) when user clicks the pin
    */
   function showSearchMarker(lat, lng, name, onAdd) {
     clearSearchMarker();
 
-    searchMarker = L.circleMarker([lat, lng], {
-      color: '#f97316',
-      fillColor: '#f97316',
-      fillOpacity: 0.9,
-      radius: 10,
-      weight: 3,
-    }).addTo(map);
+    searchMarker = L.marker([lat, lng], { icon: buildSearchPinIcon() }).addTo(map);
 
-    const popup = L.popup({ offset: [0, -5] }).setContent(`
-      <div style="min-width:180px;font-family:sans-serif">
-        <p style="font-weight:600;font-size:13px;margin:0 0 8px">${escapeHtml(name)}</p>
-        <button id="osl-search-add"
-          style="background:#3b82f6;color:#fff;padding:4px 12px;border-radius:6px;font-size:12px;border:none;cursor:pointer;width:100%">
-          + Add to list
-        </button>
-      </div>`);
-
-    searchMarker.bindPopup(popup).openPopup();
-
-    searchMarker.on('popupopen', () => {
-      document.getElementById('osl-search-add')
-        ?.addEventListener('click', () => onAdd(lat, lng));
+    searchMarker.on('click', (e) => {
+      L.DomEvent.stopPropagation(e);
+      onAdd(lat, lng);
     });
   }
 
