@@ -47,13 +47,7 @@ const MapController = (() => {
       layerGroups[list.id] = group;
 
       list.items.forEach((item) => {
-        const marker = L.circleMarker([item.lat, item.lng], {
-          color: list.color,
-          fillColor: list.color,
-          fillOpacity: 0.85,
-          radius: 8,
-          weight: 2,
-        });
+        const marker = L.marker([item.lat, item.lng], { icon: buildPinIcon(list) });
 
         marker.bindPopup(() => buildPopup(list, item));
 
@@ -101,6 +95,28 @@ const MapController = (() => {
           </button>
         </div>
       </div>`;
+  }
+
+  /**
+   * Builds a Leaflet DivIcon shaped as an SVG map pin with the list's emoji centered.
+   * @param {Object} list  must have .color (hex/CSS) and .icon (emoji)
+   * @returns {L.DivIcon}
+   */
+  function buildPinIcon(list) {
+    const color = escapeHtml(list.color);
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="38" viewBox="0 0 28 38">
+      <path d="M14 1 C7.37 1 2 6.37 2 13 C2 22 14 37 14 37 C14 37 26 22 26 13 C26 6.37 20.63 1 14 1Z"
+            fill="${color}" stroke="white" stroke-width="2"/>
+      <text x="14" y="14" text-anchor="middle" dominant-baseline="middle" font-size="13">${list.icon}</text>
+    </svg>`;
+
+    return L.divIcon({
+      html: svg,
+      className: 'osl-pin-marker',
+      iconSize: [28, 38],
+      iconAnchor: [14, 37],
+      popupAnchor: [0, -38],
+    });
   }
 
   /** Escapes HTML to prevent XSS in popup content. */

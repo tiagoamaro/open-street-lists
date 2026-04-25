@@ -11,11 +11,17 @@
   font-family: inherit;
 }
 
-/* Keep popups above the sidebar z-index (z-20) but below modals (z-50) */
+/* Popups above sidebar (z-20) and header (z-30), below modals (z-50) */
 .leaflet-popup-pane {
-  z-index: 30;
+  z-index: 40;
 }
 
 .leaflet-control-container {
   z-index: 30;
+}
+
+/* Custom SVG pin markers — reset Leaflet's default divIcon box styles */
+.osl-pin-marker {
+  background: none !important;
+  border: none !important;
 }
