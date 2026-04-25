@@ -1,19 +1,19 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# Converts Google Takeout Maps exports into the open-street-lists format.
-# Handles both JSON (GeoJSON FeatureCollections) and CSV (saved lists) files.
+# Converts Google Takeout Maps CSV exports (saved lists) into the
+# open-street-lists format.
 #
-# CSV files with place-URL entries are geocoded via Nominatim (1 req/sec).
+# Place-URL entries are geocoded via Nominatim (1 req/sec).
 # Pass --no-geocode to skip geocoding and only import entries whose
 # coordinates can be extracted directly from the URL.
 #
 # The script is resumable: if OUTPUT_FILE already exists, items whose
 # google_maps_url is already present are skipped. New items are appended and
-# the file is written after each list so progress is not lost on interruption.
+# the file is written after each row so progress is not lost on interruption.
 #
 # Usage:
-#   ruby bin/import_takeout.rb [TAKEOUT_DIR] [OUTPUT_FILE] [--no-geocode]
+#   ruby bin/import_takeout_csv.rb [TAKEOUT_DIR] [OUTPUT_FILE] [--no-geocode]
 #
 # Defaults:
 #   TAKEOUT_DIR  — ./Takeout
@@ -93,80 +93,14 @@ def name_from_place_url(url)
   CGI.unescape(m[1].gsub('+', ' ')).strip.then { |n| n.empty? ? nil : n }
 end
 
-# ── JSON ──────────────────────────────────────────────────────────────────────
-
-# Converts a single GeoJSON feature to an item hash (string-keyed), or nil if unusable.
-# Returns nil if the feature's URL is already in +known_urls+.
-#
-# @param feature    [Hash]
-# @param known_urls [Set<String>]
-# @return [Hash, nil]
-def convert_json_feature(feature, known_urls)
-  coords = feature.dig('geometry', 'coordinates') || []
-  lng, lat = coords.map(&:to_f)
-  return nil if lat.nil? || lng.nil? || (lat.zero? && lng.zero?)
-
-  props    = feature['properties'] || {}
-  location = props['location']     || {}
-
-  url = props['google_maps_url'] || "https://maps.google.com/?q=#{lat},#{lng}"
-  return nil if known_urls.include?(url)
-
-  {
-    'id'             => SecureRandom.uuid,
-    'name'           => location['name'] || props['Title'] || 'Unknown',
-    'lat'            => lat,
-    'lng'            => lng,
-    'notes'          => location['address'] || '',
-    'google_maps_url' => url,
-    'created_at'     => props['date'] || Time.now.utc.iso8601
-  }
-end
-
-# Converts a Takeout JSON file (GeoJSON FeatureCollection).
-# New items are appended to +existing_list+ when provided; otherwise a new list
-# hash (string-keyed) is returned. Returns nil when nothing new was found.
-#
-# @param path          [String]
-# @param color         [String]
-# @param known_urls    [Set<String>]
-# @param existing_list [Hash, nil]
-# @return [Hash, nil]
-def convert_json_file(path, color, known_urls, existing_list)
-  data = JSON.parse(File.read(path, encoding: 'utf-8'))
-  return nil unless data['type'] == 'FeatureCollection'
-
-  new_items = (data['features'] || []).filter_map { |f| convert_json_feature(f, known_urls) }
-  return nil if new_items.empty?
-
-  new_items.each { |i| known_urls << i['google_maps_url'] }
-
-  if existing_list
-    existing_list['items'].concat(new_items)
-    return existing_list
-  end
-
-  {
-    'id'      => SecureRandom.uuid,
-    'name'    => File.basename(path, '.json'),
-    'icon'    => '📍',
-    'color'   => color,
-    'visible' => true,
-    'items'   => new_items
-  }
-rescue JSON::ParserError => e
-  warn "  Skipping #{path}: #{e.message}"
-  nil
-end
-
 # ── CSV ───────────────────────────────────────────────────────────────────────
 
 # Converts a single CSV row to an item hash (string-keyed).
 # Skips the row if its URL is already in +known_urls+.
 # Tries to extract coordinates from the URL directly; falls back to geocoding.
 #
-# @param row          [CSV::Row]
-# @param known_urls   [Set<String>]
+# @param row           [CSV::Row]
+# @param known_urls    [Set<String>]
 # @param allow_geocode [Boolean]
 # @return [Hash, nil]
 def convert_csv_row(row, known_urls, allow_geocode:)
@@ -181,13 +115,13 @@ def convert_csv_row(row, known_urls, allow_geocode:)
     lat, lng = coords
     name = (title.nil? || title.empty? || GENERIC_TITLES.include?(title.downcase)) ? 'Dropped pin' : title
     return {
-      'id'             => SecureRandom.uuid,
-      'name'           => name,
-      'lat'            => lat,
-      'lng'            => lng,
-      'notes'          => note,
+      'id'              => SecureRandom.uuid,
+      'name'            => name,
+      'lat'             => lat,
+      'lng'             => lng,
+      'notes'           => note,
       'google_maps_url' => url,
-      'created_at'     => Time.now.utc.iso8601
+      'created_at'      => Time.now.utc.iso8601
     }
   end
 
@@ -201,13 +135,13 @@ def convert_csv_row(row, known_urls, allow_geocode:)
       lat, lng = coords
       puts "#{lat}, #{lng}"
       return {
-        'id'             => SecureRandom.uuid,
-        'name'           => name,
-        'lat'            => lat,
-        'lng'            => lng,
-        'notes'          => note,
+        'id'              => SecureRandom.uuid,
+        'name'            => name,
+        'lat'             => lat,
+        'lng'             => lng,
+        'notes'           => note,
         'google_maps_url' => url,
-        'created_at'     => Time.now.utc.iso8601
+        'created_at'      => Time.now.utc.iso8601
       }
     else
       puts 'not found, skipped'
@@ -217,7 +151,6 @@ def convert_csv_row(row, known_urls, allow_geocode:)
 
   nil
 end
-
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 
@@ -232,16 +165,13 @@ unless Dir.exist?(takeout_dir)
   exit 1
 end
 
-json_files = Dir.glob(File.join(takeout_dir, '**', '*.json')).sort
-csv_files  = Dir.glob(File.join(takeout_dir, '**', '*.csv')).sort
-all_files  = json_files + csv_files
+csv_files = Dir.glob(File.join(takeout_dir, '**', '*.csv')).sort
 
-if all_files.empty?
-  warn "No JSON or CSV files found in '#{takeout_dir}'."
+if csv_files.empty?
+  warn "No CSV files found in '#{takeout_dir}'."
   exit 1
 end
 
-# Load existing output so the run is resumable
 output = begin
   File.exist?(output_path) ? JSON.parse(File.read(output_path, encoding: 'utf-8')) : { 'version' => 1, 'lists' => [] }
 rescue JSON::ParserError
@@ -250,41 +180,18 @@ end
 
 lists_by_name = output['lists'].each_with_object({}) { |l, h| h[l['name']] = l }
 
-# Build set of already-imported URLs so we can skip them
 known_urls = Set.new
 output['lists'].each { |l| (l['items'] || []).each { |i| known_urls << i['google_maps_url'] } }
 
-if allow_geocode && csv_files.any?
+if allow_geocode
   puts "Note: CSV place entries will be geocoded via Nominatim (1 req/sec)."
   puts "      Pass --no-geocode to skip geocoding (only inline-coord entries imported)."
   puts "      Already-imported URLs are skipped automatically.\n\n"
 end
 
-color_index = output['lists'].length # continue colour rotation after existing lists
+color_index = output['lists'].length
 
-puts "Processing #{json_files.length} JSON + #{csv_files.length} CSV file(s):\n\n"
-
-json_files.each do |path|
-  list_name = File.basename(path, '.json')
-  print "  [JSON] #{File.basename(path)}… "
-
-  existing     = lists_by_name[list_name]
-  before_count = existing ? existing['items'].length : 0
-  list         = convert_json_file(path, COLORS[color_index % COLORS.length], known_urls, existing)
-
-  if list
-    added = list['items'].length - before_count
-    puts "#{added} new place(s) (#{list['items'].length} total)"
-    unless existing
-      output['lists'] << list
-      lists_by_name[list_name] = list
-      color_index += 1
-    end
-    File.write(output_path, JSON.pretty_generate(output))
-  else
-    puts 'skipped (no new features)'
-  end
-end
+puts "Processing #{csv_files.length} CSV file(s):\n\n"
 
 csv_files.each do |path|
   list_name = File.basename(path, '.csv')
