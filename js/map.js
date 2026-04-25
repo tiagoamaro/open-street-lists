@@ -34,7 +34,7 @@ const MapController = (() => {
   /**
    * Clears all markers and re-draws them from the lists array.
    * @param {Array} lists
-   * @param {{ onEdit: function, onDelete: function }} callbacks
+   * @param {{ onOpen: function }} callbacks
    */
   function renderMarkers(lists, callbacks) {
     Object.values(layerGroups).forEach((g) => map.removeLayer(g));
@@ -49,52 +49,14 @@ const MapController = (() => {
       list.items.forEach((item) => {
         const marker = L.marker([item.lat, item.lng], { icon: buildPinIcon(list) });
 
-        marker.bindPopup(() => buildPopup(list, item));
-
-        marker.on('popupopen', () => {
-          const editBtn = document.getElementById(`osl-edit-${item.id}`);
-          const deleteBtn = document.getElementById(`osl-delete-${item.id}`);
-          editBtn?.addEventListener('click', () => callbacks.onEdit(list.id, item.id));
-          deleteBtn?.addEventListener('click', () => callbacks.onDelete(list.id, item.id));
+        marker.on('click', (e) => {
+          L.DomEvent.stopPropagation(e);
+          callbacks.onOpen(list, item);
         });
 
         group.addLayer(marker);
       });
     });
-  }
-
-  /**
-   * Builds the HTML string for a marker popup.
-   * @param {Object} list
-   * @param {Object} item
-   * @returns {string}
-   */
-  function buildPopup(list, item) {
-    const notes = item.notes
-      ? `<p style="color:#555;font-size:12px;margin:4px 0 8px">${escapeHtml(item.notes)}</p>`
-      : '';
-
-    return `
-      <div style="min-width:190px;font-family:sans-serif">
-        <p style="font-weight:600;font-size:14px;margin:0 0 2px">
-          ${escapeHtml(list.icon)} ${escapeHtml(item.name)}
-        </p>
-        ${notes}
-        <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
-          <a href="${item.google_maps_url}" target="_blank" rel="noopener"
-             style="background:#4285F4;color:#fff;padding:4px 10px;border-radius:6px;font-size:12px;text-decoration:none">
-            Google Maps
-          </a>
-          <button id="osl-edit-${item.id}"
-            style="background:#6b7280;color:#fff;padding:4px 10px;border-radius:6px;font-size:12px;border:none;cursor:pointer">
-            Edit
-          </button>
-          <button id="osl-delete-${item.id}"
-            style="background:#ef4444;color:#fff;padding:4px 10px;border-radius:6px;font-size:12px;border:none;cursor:pointer">
-            Delete
-          </button>
-        </div>
-      </div>`;
   }
 
   /**

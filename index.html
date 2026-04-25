@@ -456,6 +456,38 @@
   </template>
 
 
+  <!-- Marker modal -->
+  <template x-if="modal === 'marker' && markerItem">
+    <div class="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-5">
+        <div class="flex items-start justify-between mb-3">
+          <p class="font-semibold text-gray-900 text-base leading-snug">
+            <span x-text="markerList.icon"></span>
+            <span x-text="markerItem.name"></span>
+          </p>
+          <button @click="modal = null" class="text-gray-400 hover:text-gray-600 text-lg leading-none ml-3 flex-shrink-0">✕</button>
+        </div>
+
+        <p x-show="markerItem.notes" x-text="markerItem.notes" class="text-sm text-gray-500 mb-4"></p>
+
+        <div class="flex gap-2 flex-wrap">
+          <button
+            @click="window.open(markerItem.google_maps_url, '_blank', 'noopener')"
+            class="flex-1 text-center text-sm px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >Google Maps ↗</button>
+          <button
+            @click="modal = null; openEditItem(markerList.id, markerItem.id)"
+            class="text-sm px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+          >Edit</button>
+          <button
+            @click="modal = null; deleteItem(markerList.id, markerItem.id)"
+            class="text-sm px-3 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors"
+          >Delete</button>
+        </div>
+      </div>
+    </div>
+  </template>
+
   <!-- ── Scripts (order matters: our code before Alpine) ──────────── -->
   <script src="js/gist.js"></script>
   <script src="js/map.js"></script>

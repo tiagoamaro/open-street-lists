@@ -12,10 +12,14 @@ document.addEventListener('alpine:init', () => {
     sidebarOpen: window.innerWidth >= 768,
 
     // ── Modal state ───────────────────────────────────────────────────
-    modal: null,        // 'settings' | 'list' | 'item' | null
+    modal: null,        // 'settings' | 'list' | 'item' | 'marker' | null
     editMode: false,
     editListId: null,
     editItemId: null,
+
+    // ── Marker modal ──────────────────────────────────────────────────
+    markerList: null,
+    markerItem: null,
 
     // ── Form models ───────────────────────────────────────────────────
     formSettings: { token: '', gistId: '' },
@@ -134,9 +138,14 @@ document.addEventListener('alpine:init', () => {
 
     renderMap() {
       MapController.renderMarkers(this.lists, {
-        onEdit:   (listId, itemId) => this.openEditItem(listId, itemId),
-        onDelete: (listId, itemId) => this.deleteItem(listId, itemId),
+        onOpen: (list, item) => this.openMarkerModal(list, item),
       });
+    },
+
+    openMarkerModal(list, item) {
+      this.markerList = list;
+      this.markerItem = item;
+      this.modal = 'marker';
     },
 
     async loadFromGist() {

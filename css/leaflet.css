@@ -13,7 +13,7 @@
 
 /* Popups above sidebar (z-20) and header (z-30), below modals (z-50) */
 .leaflet-popup-pane {
-  z-index: 40;
+  z-index: 140;
 }
 
 .leaflet-control-container {
