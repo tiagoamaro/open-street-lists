@@ -22,7 +22,7 @@ document.addEventListener('alpine:init', () => {
     markerItem: null,
 
     // ── Form models ───────────────────────────────────────────────────
-    formSettings: { token: '', gistId: '' },
+    formSettings: { token: '', gistId: '', searchEngine: 'nominatim', geoapifyKey: '' },
     settingsError: '',
     settingsSuccess: '',
 
@@ -90,7 +90,12 @@ document.addEventListener('alpine:init', () => {
       const savedSettings = localStorage.getItem('osl_settings');
       if (savedSettings) {
         const s = JSON.parse(savedSettings);
-        this.formSettings = { token: s.token || '', gistId: s.gistId || '' };
+        this.formSettings = {
+          token: s.token || '',
+          gistId: s.gistId || '',
+          searchEngine: s.searchEngine || 'nominatim',
+          geoapifyKey: s.geoapifyKey || '',
+        };
       }
 
       const cachedData = localStorage.getItem('osl_data');
@@ -209,12 +214,12 @@ document.addEventListener('alpine:init', () => {
       this.settingsError = '';
       this.settingsSuccess = '';
 
+      localStorage.setItem('osl_settings', JSON.stringify(this.formSettings));
+
       if (!this.formSettings.token.trim()) {
-        this.settingsError = 'A GitHub token is required.';
+        this.settingsSuccess = 'Settings saved.';
         return;
       }
-
-      localStorage.setItem('osl_settings', JSON.stringify(this.formSettings));
 
       if (this.formSettings.gistId) {
         try {
@@ -405,7 +410,7 @@ document.addEventListener('alpine:init', () => {
       MapController.flyTo(item.lat, item.lng);
     },
 
-    // ── Place search (Nominatim) ──────────────────────────────────────
+    // ── Place search ──────────────────────────────────────────────────
     onSearchInput() {
       clearTimeout(this._searchTimer);
       if (!this.searchQuery.trim()) {
@@ -418,17 +423,58 @@ document.addEventListener('alpine:init', () => {
     async doSearch() {
       this.searching = true;
       try {
-        const q = encodeURIComponent(this.searchQuery.trim());
-        const res = await fetch(
-          `https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=6&addressdetails=0`,
-          { headers: { Accept: 'application/json' } }
-        );
-        this.searchResults = await res.json();
+        const engine = this.formSettings.searchEngine || 'nominatim';
+        if (engine === 'photon') {
+          await this._searchPhoton();
+        } else if (engine === 'geoapify') {
+          await this._searchGeoapify();
+        } else {
+          await this._searchNominatim();
+        }
       } catch (_) {
         this.searchResults = [];
       } finally {
         this.searching = false;
       }
+    },
+
+    async _searchNominatim() {
+      const q = encodeURIComponent(this.searchQuery.trim());
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=6&addressdetails=0`,
+        { headers: { Accept: 'application/json' } }
+      );
+      // Nominatim already returns { place_id, display_name, lat, lon }
+      this.searchResults = await res.json();
+    },
+
+    async _searchPhoton() {
+      const q = encodeURIComponent(this.searchQuery.trim());
+      const res = await fetch(`https://photon.komoot.io/api/?q=${q}&limit=6`);
+      const data = await res.json();
+      this.searchResults = (data.features || []).map((f, i) => ({
+        place_id: `photon-${i}-${f.geometry.coordinates.join(',')}`,
+        display_name: [f.properties.name, f.properties.city, f.properties.state, f.properties.country]
+          .filter(Boolean).join(', '),
+        lat: f.geometry.coordinates[1],
+        lon: f.geometry.coordinates[0],
+      }));
+    },
+
+    async _searchGeoapify() {
+      const key = this.formSettings.geoapifyKey;
+      if (!key) { this.searchResults = []; return; }
+      const q = encodeURIComponent(this.searchQuery.trim());
+      const res = await fetch(
+        `https://api.geoapify.com/v1/geocode/autocomplete?text=${q}&limit=6&apiKey=${key}`
+      );
+      const data = await res.json();
+      this.searchResults = (data.features || []).map((f) => ({
+        place_id: f.properties.place_id || `${f.properties.lat},${f.properties.lon}`,
+        display_name: f.properties.formatted,
+        lat: f.properties.lat,
+        lon: f.properties.lon,
+      }));
     },
 
     selectSearchResult(result) {
