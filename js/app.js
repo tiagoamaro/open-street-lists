@@ -146,6 +146,7 @@ document.addEventListener('alpine:init', () => {
       this.markerList = list;
       this.markerItem = item;
       this.modal = 'marker';
+      MapController.flyTo(item.lat, item.lng);
     },
 
     async loadFromGist() {
