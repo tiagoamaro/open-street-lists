@@ -4,16 +4,19 @@
 # Converts Google Takeout Maps CSV exports (saved lists) into the
 # open-street-lists format.
 #
-# Place-URL entries are geocoded via Nominatim (1 req/sec).
-# Pass --no-geocode to skip geocoding and only import entries whose
-# coordinates can be extracted directly from the URL.
+# Coordinate resolution order per row:
+#   1. Inline coords in the URL (/maps/search/ or @lat,lng anchor)
+#   2. Google Geocoding API  — pass --google-api-key=KEY (most accurate)
+#   3. Nominatim             — free fallback, 1 req/sec
+#
+# Pass --no-geocode to skip steps 2 and 3 (URL-extractable entries only).
 #
 # The script is resumable: if OUTPUT_FILE already exists, items whose
 # google_maps_url is already present are skipped. New items are appended and
 # the file is written after each row so progress is not lost on interruption.
 #
 # Usage:
-#   ruby bin/import_takeout_csv.rb [TAKEOUT_DIR] [OUTPUT_FILE] [--no-geocode]
+#   ruby bin/import_takeout_csv.rb [TAKEOUT_DIR] [OUTPUT_FILE] [--no-geocode] [--google-api-key=KEY]
 #
 # Defaults:
 #   TAKEOUT_DIR  — ./Takeout
@@ -36,6 +39,34 @@ COLORS = %w[
 GENERIC_TITLES = %w[dropped\ pin alfinete\ inserido].freeze
 
 # ── Geocoding ─────────────────────────────────────────────────────────────────
+
+# Queries the Google Geocoding API for the first result matching +name+.
+#
+# @param name    [String]
+# @param api_key [String]
+# @return [Array(Float, Float), nil] [lat, lng] or nil
+def geocode_with_google(name, api_key)
+  uri = URI('https://maps.googleapis.com/maps/api/geocode/json')
+  uri.query = URI.encode_www_form(address: name, key: api_key)
+
+  http = Net::HTTP.new(uri.host, uri.port)
+  http.use_ssl = true
+  http.open_timeout = 10
+  http.read_timeout = 10
+
+  req = Net::HTTP::Get.new(uri)
+  req['Accept'] = 'application/json'
+
+  body    = JSON.parse(http.request(req).body)
+  results = body['results'] || []
+  return nil if results.empty?
+
+  loc = results[0].dig('geometry', 'location')
+  [loc['lat'].to_f, loc['lng'].to_f]
+rescue StandardError => e
+  warn "    google geocode failed for #{name.inspect}: #{e.message}"
+  nil
+end
 
 # Queries Nominatim for the first result matching +query+.
 # Respects the 1-request-per-second usage policy with a built-in sleep.
@@ -112,11 +143,12 @@ end
 # Skips the row if its URL is already in +known_urls+.
 # Tries to extract coordinates from the URL directly; falls back to geocoding.
 #
-# @param row           [CSV::Row]
-# @param known_urls    [Set<String>]
-# @param allow_geocode [Boolean]
+# @param row            [CSV::Row]
+# @param known_urls     [Set<String>]
+# @param allow_geocode  [Boolean]
+# @param google_api_key [String, nil]
 # @return [Hash, nil]
-def convert_csv_row(row, known_urls, allow_geocode:)
+def convert_csv_row(row, known_urls, allow_geocode:, google_api_key: nil)
   title = row['Title']&.strip
   url   = row['URL']&.strip
   note  = row['Note']&.strip || ''
@@ -146,7 +178,12 @@ def convert_csv_row(row, known_urls, allow_geocode:)
 
   if allow_geocode
     print "    geocoding #{name.inspect}… "
-    coords = geocode(name)
+
+    coords = if google_api_key
+               geocode_with_google(name, google_api_key)
+             end
+    coords ||= geocode(name)
+
     if coords
       lat, lng = coords
       puts "#{lat}, #{lng}"
@@ -170,11 +207,13 @@ end
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 
-args          = ARGV.dup
-no_geocode    = args.delete('--no-geocode')
-takeout_dir   = args[0] || './Takeout'
-output_path   = args[1] || './lists.json'
-allow_geocode = !no_geocode
+args           = ARGV.dup
+no_geocode     = args.delete('--no-geocode')
+google_api_key = args.find { |a| a.start_with?('--google-api-key=') }&.split('=', 2)&.last
+args.reject! { |a| a.start_with?('--google-api-key=') }
+takeout_dir    = args[0] || './Takeout'
+output_path    = args[1] || './lists.json'
+allow_geocode  = !no_geocode
 
 unless Dir.exist?(takeout_dir)
   warn "Error: directory '#{takeout_dir}' not found."
@@ -200,7 +239,12 @@ known_urls = Set.new
 output['lists'].each { |l| (l['items'] || []).each { |i| known_urls << i['google_maps_url'] } }
 
 if allow_geocode
-  puts "Note: CSV place entries will be geocoded via Nominatim (1 req/sec)."
+  if google_api_key
+    puts "Note: CSV place entries will be geocoded via Google Geocoding API, falling back to Nominatim."
+  else
+    puts "Note: CSV place entries will be geocoded via Nominatim (1 req/sec)."
+    puts "      Pass --google-api-key=KEY to use Google Geocoding API instead (more accurate)."
+  end
   puts "      Pass --no-geocode to skip geocoding (only inline-coord entries imported)."
   puts "      Already-imported URLs are skipped automatically.\n\n"
 end
@@ -224,7 +268,7 @@ csv_files.each do |path|
   added = 0
 
   rows.each do |row|
-    item = convert_csv_row(row, known_urls, allow_geocode: allow_geocode)
+    item = convert_csv_row(row, known_urls, allow_geocode: allow_geocode, google_api_key: google_api_key)
     next unless item
 
     known_urls << item['google_maps_url']
