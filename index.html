@@ -32,7 +32,7 @@
       <!-- Mobile sidebar toggle -->
       <button
         @click="sidebarOpen = !sidebarOpen"
-        class="md:hidden p-2 rounded-lg hover:bg-gray-100 text-gray-600"
+        class="md:hidden p-2 rounded-lg hover:bg-gray-100 text-gray-600 cursor-pointer"
         aria-label="Toggle sidebar"
       >☰</button>
       <span class="font-semibold text-gray-800 text-sm">📍 Open Street Lists</span>
@@ -49,19 +49,19 @@
       <button
         @click="sync()"
         :disabled="syncStatus === 'syncing'"
-        class="text-xs px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+        class="text-xs px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors cursor-pointer"
       >🔄 Sync</button>
 
       <button
         @click="locateMe()"
         :disabled="locating"
-        class="text-xs px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 transition-colors"
+        class="text-xs px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 transition-colors cursor-pointer"
         title="Center map on your location"
       ><span x-text="locating ? '…' : '📍 Locate me'"></span></button>
 
       <button
         @click="modal = 'settings'"
-        class="text-xs px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+        class="text-xs px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors cursor-pointer"
         aria-label="Settings"
       >⚙️</button>
     </div>
@@ -89,7 +89,7 @@
         <span class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Lists</span>
         <button
           @click="openAddList()"
-          class="text-xs px-2.5 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+          class="text-xs px-2.5 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors cursor-pointer"
         >+ Add List</button>
       </div>
 
@@ -123,7 +123,7 @@
               <!-- Name (click = expand + fly to bounds) -->
               <button
                 @click="toggleExpand(list.id); flyToList(list.id)"
-                class="flex-1 text-left text-sm font-medium text-gray-800 hover:text-blue-600 truncate"
+                class="flex-1 text-left text-sm font-medium text-gray-800 hover:text-blue-600 truncate cursor-pointer"
               >
                 <span x-text="list.icon"></span>
                 <span x-text="list.name"></span>
@@ -133,7 +133,7 @@
               <!-- Expand toggle -->
               <button
                 @click="toggleExpand(list.id)"
-                class="text-gray-400 hover:text-gray-600 text-xs px-1"
+                class="text-gray-400 hover:text-gray-600 text-xs px-1 cursor-pointer"
                 :title="expandedLists.includes(list.id) ? 'Collapse' : 'Expand'"
               >
                 <span x-text="expandedLists.includes(list.id) ? '▲' : '▼'"></span>
@@ -142,12 +142,12 @@
               <!-- Edit / Delete list -->
               <button
                 @click="openEditList(list.id)"
-                class="text-gray-400 hover:text-gray-600 text-xs px-1"
+                class="text-gray-400 hover:text-gray-600 text-xs px-1 cursor-pointer"
                 title="Edit list"
               >✏️</button>
               <button
                 @click="deleteList(list.id)"
-                class="text-red-300 hover:text-red-500 text-xs px-1"
+                class="text-red-300 hover:text-red-500 text-xs px-1 cursor-pointer"
                 title="Delete list"
               >🗑</button>
             </div>
@@ -159,17 +159,17 @@
                   <div class="flex items-center gap-1 pl-8 pr-3 py-1.5 hover:bg-gray-100">
                     <button
                       @click="flyToItem(item); sidebarOpen = window.innerWidth >= 768"
-                      class="flex-1 text-left text-xs text-gray-700 hover:text-blue-600 truncate"
+                      class="flex-1 text-left text-xs text-gray-700 hover:text-blue-600 truncate cursor-pointer"
                       x-text="item.name"
                     ></button>
                     <button
                       @click="openEditItem(list.id, item.id)"
-                      class="text-gray-400 hover:text-gray-600 text-xs px-1"
+                      class="text-gray-400 hover:text-gray-600 text-xs px-1 cursor-pointer"
                       title="Edit place"
                     >✏️</button>
                     <button
                       @click="deleteItem(list.id, item.id)"
-                      class="text-red-300 hover:text-red-500 text-xs px-1"
+                      class="text-red-300 hover:text-red-500 text-xs px-1 cursor-pointer"
                       title="Delete place"
                     >🗑</button>
                   </div>
@@ -177,7 +177,7 @@
 
                 <button
                   @click="openAddItem(list.id)"
-                  class="w-full text-left pl-8 pr-3 py-2 text-xs text-blue-600 hover:bg-gray-100 transition-colors"
+                  class="w-full text-left pl-8 pr-3 py-2 text-xs text-blue-600 hover:bg-gray-100 transition-colors cursor-pointer"
                 >+ Add place</button>
               </div>
             </template>
@@ -217,7 +217,7 @@
           <button
             x-show="searchQuery"
             @click="clearSearch()"
-            class="text-gray-400 hover:text-gray-600 text-xs leading-none"
+            class="text-gray-400 hover:text-gray-600 text-xs leading-none cursor-pointer"
             aria-label="Clear search"
           >✕</button>
           <span class="text-gray-400 text-sm select-none">🔍</span>
@@ -227,7 +227,7 @@
         <template x-if="formSettings.searchEngine === 'geoapify' && !formSettings.geoapifyKey">
           <button
             @click="modal = 'settings'"
-            class="text-xs bg-amber-50 text-amber-700 border border-amber-200 rounded-lg px-2.5 py-1 hover:bg-amber-100 transition-colors"
+            class="text-xs bg-amber-50 text-amber-700 border border-amber-200 rounded-lg px-2.5 py-1 hover:bg-amber-100 transition-colors cursor-pointer"
           >⚠️ Set Geoapify API key</button>
         </template>
 
@@ -239,7 +239,7 @@
           <template x-for="result in searchResults" :key="result.place_id">
             <button
               @click="selectSearchResult(result)"
-              class="w-full text-left px-4 py-2.5 text-xs text-gray-700 hover:bg-blue-50 border-b border-gray-100 last:border-0 leading-snug"
+              class="w-full text-left px-4 py-2.5 text-xs text-gray-700 hover:bg-blue-50 border-b border-gray-100 last:border-0 leading-snug cursor-pointer"
               x-text="result.display_name"
             ></button>
           </template>
@@ -322,10 +322,10 @@
         </div>
 
         <div class="flex justify-end gap-2 mt-6">
-          <button @click="modal = null" class="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+          <button @click="modal = null" class="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer">
             Cancel
           </button>
-          <button @click="saveSettings()" class="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+          <button @click="saveSettings()" class="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors cursor-pointer">
             Save Settings
           </button>
         </div>
@@ -358,7 +358,7 @@
               <template x-for="emoji in iconOptions" :key="emoji">
                 <button
                   @click="formList.icon = emoji"
-                  class="text-xl p-1.5 rounded-lg hover:bg-gray-100 border-2 transition-colors"
+                  class="text-xl p-1.5 rounded-lg hover:bg-gray-100 border-2 transition-colors cursor-pointer"
                   :class="formList.icon === emoji ? 'border-blue-500 bg-blue-50' : 'border-transparent'"
                   x-text="emoji"
                 ></button>
@@ -372,7 +372,7 @@
               <template x-for="color in colorOptions" :key="color">
                 <button
                   @click="formList.color = color"
-                  class="w-7 h-7 rounded-full border-4 transition-all"
+                  class="w-7 h-7 rounded-full border-4 transition-all cursor-pointer"
                   :class="formList.color === color ? 'border-gray-800 scale-110' : 'border-white shadow'"
                   :style="`background:${color}`"
                 ></button>
@@ -385,14 +385,14 @@
           <button
             x-show="editMode"
             @click="deleteList(editListId)"
-            class="px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+            class="px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
           >Delete List</button>
 
           <div class="flex gap-2 ml-auto">
-            <button @click="modal = null" class="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+            <button @click="modal = null" class="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer">
               Cancel
             </button>
-            <button @click="saveList()" class="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors" x-text="editMode ? 'Save' : 'Add List'">
+            <button @click="saveList()" class="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors cursor-pointer" x-text="editMode ? 'Save' : 'Add List'">
             </button>
           </div>
         </div>
@@ -478,7 +478,7 @@
               <button
                 x-show="formItem.google_maps_url"
                 @click="window.open(formItem.google_maps_url, '_blank', 'noopener')"
-                class="text-xs text-blue-600 hover:underline flex-shrink-0 ml-2"
+                class="text-xs text-blue-600 hover:underline flex-shrink-0 ml-2 cursor-pointer"
               >Open ↗</button>
             </div>
           </div>
@@ -488,14 +488,14 @@
           <button
             x-show="editMode"
             @click="deleteItem(formItem.originalListId, editItemId)"
-            class="px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+            class="px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
           >Delete</button>
 
           <div class="flex gap-2 ml-auto">
-            <button @click="modal = null" class="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+            <button @click="modal = null" class="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer">
               Cancel
             </button>
-            <button @click="saveItem()" class="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors" x-text="editMode ? 'Save' : 'Add Place'">
+            <button @click="saveItem()" class="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors cursor-pointer" x-text="editMode ? 'Save' : 'Add Place'">
             </button>
           </div>
         </div>
@@ -513,7 +513,7 @@
             <span x-text="markerList.icon"></span>
             <span x-text="markerItem.name"></span>
           </p>
-          <button @click="modal = null" class="text-gray-400 hover:text-gray-600 text-lg leading-none ml-3 flex-shrink-0">✕</button>
+          <button @click="modal = null" class="text-gray-400 hover:text-gray-600 text-lg leading-none ml-3 flex-shrink-0 cursor-pointer">✕</button>
         </div>
 
         <p x-show="markerItem.notes" x-text="markerItem.notes" class="text-sm text-gray-500 mb-4"></p>
@@ -521,15 +521,15 @@
         <div class="flex gap-2 flex-wrap">
           <button
             @click="window.open(markerItem.google_maps_url, '_blank', 'noopener')"
-            class="flex-1 text-center text-sm px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            class="flex-1 text-center text-sm px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors cursor-pointer"
           >Google Maps ↗</button>
           <button
             @click="modal = null; openEditItem(markerList.id, markerItem.id)"
-            class="text-sm px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+            class="text-sm px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors cursor-pointer"
           >Edit</button>
           <button
             @click="modal = null; deleteItem(markerList.id, markerItem.id)"
-            class="text-sm px-3 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors"
+            class="text-sm px-3 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors cursor-pointer"
           >Delete</button>
         </div>
       </div>
