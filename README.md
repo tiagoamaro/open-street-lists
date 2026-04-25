@@ -8,6 +8,7 @@ A personal favorite-places web app built on OpenStreetMap. Organize saved locati
 - **Multiple lists** — each with a name, emoji icon, and color
 - **CRUD** for lists and individual places
 - **Click map to add** a place (coordinates pre-filled)
+- **Place search** — Photon by Komoot (free, no key) or Geoapify (richer data, API key required)
 - **Offline-first** — data cached in `localStorage`, synced to Gist when online
 - **GitHub Gist as database** — one secret Gist holds a single `lists.json` file
 - **JSON export** — download your data at any time
@@ -64,6 +65,40 @@ A personal favorite-places web app built on OpenStreetMap. Organize saved locati
 5. A secret Gist is created automatically; its ID is saved locally
 
 On subsequent visits the app loads data from the Gist automatically.
+
+## Importing from Google Takeout
+
+Export your Google Maps saved places via [Google Takeout](https://takeout.google.com) (select **Maps (your places)**), then run one of the Ruby import scripts. No gems required — stdlib only.
+
+### CSV export
+
+```sh
+ruby bin/import_takeout_csv.rb [TAKEOUT_DIR] [OUTPUT_FILE] [OPTIONS]
+```
+
+### JSON export (GeoJSON)
+
+```sh
+ruby bin/import_takeout_json.rb [TAKEOUT_DIR] [OUTPUT_FILE] [OPTIONS]
+```
+
+Both scripts share the same options:
+
+| Option | Description |
+|---|---|
+| `TAKEOUT_DIR` | Directory containing Takeout files (default: `./Takeout`) |
+| `OUTPUT_FILE` | Output path (default: `./lists.json`) |
+| `--google-api-key=KEY` | Use Google Geocoding API for places missing inline coordinates |
+| `--no-geocode` | Skip geocoding; only import entries whose URL contains coordinates |
+| `-h`, `--help` | Show usage |
+
+**Coordinate resolution order:**
+
+1. Inline coords extracted from the URL
+2. Google Geocoding API (if `--google-api-key` provided)
+3. Nominatim free geocoder (1 req/sec, auto-fallback)
+
+Both scripts are **resumable** — if the output file already exists, entries whose `google_maps_url` is already present are skipped, so you can safely re-run after an interruption.
 
 ## Local development
 
