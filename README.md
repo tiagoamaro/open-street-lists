@@ -55,16 +55,7 @@ A personal favorite-places web app built on OpenStreetMap. Organize saved locati
 3. Select this repository; set **build command** to _(empty)_ and **output directory** to `/`
 4. Deploy — your URL will be `https://open-street-lists.pages.dev`
 
-### 3. Protect with Cloudflare Access
-
-1. Go to **Cloudflare Zero Trust → Access → Applications → Add Self-hosted App**
-2. Set the application URL to your Pages domain
-3. Create a policy: **Allow → Emails → your@email.com**
-4. Auth method: **One-time PIN** (no OAuth app required)
-
-Only your email can now reach the app.
-
-### 4. First run
+### 3. First run
 
 1. Open the app and click **⚙️ Settings**
 2. Paste your GitHub PAT — leave Gist ID empty
@@ -93,4 +84,3 @@ No build step needed — just open `index.html` in a browser.
 | Styling | [Tailwind CSS v4](https://tailwindcss.com) (browser CDN) |
 | Database | GitHub Gist (secret, `lists.json`) |
 | Hosting | [Cloudflare Pages](https://pages.cloudflare.com) (free) |
-| Auth | [Cloudflare Access](https://developers.cloudflare.com/cloudflare-one/policies/access/) (Zero Trust, free tier) |
