@@ -69,7 +69,8 @@ const MapController = (() => {
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="38" viewBox="0 0 28 38">
       <path d="M14 1 C7.37 1 2 6.37 2 13 C2 22 14 37 14 37 C14 37 26 22 26 13 C26 6.37 20.63 1 14 1Z"
             fill="${color}" stroke="white" stroke-width="2"/>
-      <text x="14" y="14" text-anchor="middle" dominant-baseline="middle" font-size="13">${list.icon}</text>
+      <circle cx="14" cy="13" r="9" fill="white"/>
+      <text x="14" y="14" text-anchor="middle" dominant-baseline="middle" font-size="12">${list.icon}</text>
     </svg>`;
 
     return L.divIcon({
