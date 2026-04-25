@@ -81,6 +81,19 @@ def coords_from_search_url(url)
   (lat.zero? && lng.zero?) ? nil : [lat, lng]
 end
 
+# Extracts [lat, lng] from the @lat,lng,zoom anchor in a Google Maps place URL,
+# e.g. https://www.google.com/maps/place/Zoo+Berlin/@52.5083,13.3690,17z/data=...
+#
+# @param url [String]
+# @return [Array(Float, Float), nil]
+def coords_from_place_url(url)
+  m = url.match(/@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/)
+  return nil unless m
+
+  lat, lng = m[1].to_f, m[2].to_f
+  (lat.zero? && lng.zero?) ? nil : [lat, lng]
+end
+
 # Extracts a human-readable place name from a Google Maps place URL,
 # e.g. https://www.google.com/maps/place/Zoo+Berlin/data=...  →  "Zoo Berlin"
 #
@@ -111,9 +124,12 @@ def convert_csv_row(row, known_urls, allow_geocode:)
   return nil if url.nil? || url.empty?
   return nil if known_urls.include?(url)
 
-  if (coords = coords_from_search_url(url))
+  coords = coords_from_search_url(url) || coords_from_place_url(url)
+
+  if coords
     lat, lng = coords
     name = (title.nil? || title.empty? || GENERIC_TITLES.include?(title.downcase)) ? 'Dropped pin' : title
+    name = name_from_place_url(url) || name if name == 'Dropped pin'
     return {
       'id'              => SecureRandom.uuid,
       'name'            => name,
