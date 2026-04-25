@@ -208,6 +208,31 @@ end
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 args           = ARGV.dup
+
+if args.include?('--help') || args.include?('-h')
+  puts <<~HELP
+    Usage:
+      ruby bin/import_takeout_csv.rb [TAKEOUT_DIR] [OUTPUT_FILE] [OPTIONS]
+
+    Arguments:
+      TAKEOUT_DIR              Directory containing Google Takeout CSV files (default: ./Takeout)
+      OUTPUT_FILE              Output JSON file path (default: ./lists.json)
+
+    Options:
+      --google-api-key=KEY     Use Google Geocoding API for place name resolution (most accurate)
+      --no-geocode             Skip geocoding; only import entries with inline coordinates in the URL
+      -h, --help               Show this help message
+
+    Coordinate resolution order:
+      1. Inline coords extracted from the URL (/maps/search/ or @lat,lng anchor)
+      2. Google Geocoding API (if --google-api-key is provided)
+      3. Nominatim free geocoder (1 req/sec, fallback when no API key)
+
+    The script is resumable: already-imported URLs are skipped automatically.
+  HELP
+  exit 0
+end
+
 no_geocode     = args.delete('--no-geocode')
 google_api_key = args.find { |a| a.start_with?('--google-api-key=') }&.split('=', 2)&.last
 args.reject! { |a| a.start_with?('--google-api-key=') }

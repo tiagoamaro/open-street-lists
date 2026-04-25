@@ -93,6 +93,23 @@ end
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 
+if ARGV.include?('--help') || ARGV.include?('-h')
+  puts <<~HELP
+    Usage:
+      ruby bin/import_takeout_json.rb [TAKEOUT_DIR] [OUTPUT_FILE] [OPTIONS]
+
+    Arguments:
+      TAKEOUT_DIR    Directory containing Google Takeout JSON files (default: ./Takeout)
+      OUTPUT_FILE    Output JSON file path (default: ./lists.json)
+
+    Options:
+      -h, --help     Show this help message
+
+    The script is resumable: already-imported URLs are skipped automatically.
+  HELP
+  exit 0
+end
+
 takeout_dir = ARGV[0] || './Takeout'
 output_path = ARGV[1] || './lists.json'
 
