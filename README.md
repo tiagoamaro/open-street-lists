@@ -119,3 +119,7 @@ No build step needed — just open `index.html` in a browser.
 | Styling | [Tailwind CSS v4](https://tailwindcss.com) (browser CDN) |
 | Database | GitHub Gist (secret, `lists.json`) |
 | Hosting | [Cloudflare Pages](https://pages.cloudflare.com) (free) |
+
+## AI-assisted development
+
+This project uses [Claude Code](https://claude.ai/code) (Anthropic) for AI-assisted development. Project context and conventions are in [`CLAUDE.md`](CLAUDE.md), which agents read automatically when working in this repo.

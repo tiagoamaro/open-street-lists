@@ -1,46 +1,48 @@
-# Project: open-street-lists
+# open-street-lists
+
+## Structure
+
+Static no-build app. Entry: `index.html`.
+
+```
+js/app.js          Alpine.js root component (state, modals, CRUD)
+js/map.js          MapController — Leaflet map, markers, zoom
+js/gist.js         GitHub Gist sync (read/write lists.json)
+css/leaflet.css    Leaflet styles
+icons/icon.svg     App icon
+manifest.json      PWA manifest
+Makefile           Dev tasks
+bin/               Import scripts (symlinks → google_takeout_scripts/)
+google_takeout_scripts/
+  import_takeout_csv.rb      CSV importer (stdlib only)
+  import_takeout_json.rb     GeoJSON importer (stdlib only)
+  import_takeout_selenium.rb Selenium-based scraper
+Takeout/           Local Google Takeout sample data
+.tool-versions     asdf Ruby version pin
+```
+
+Stack: Leaflet.js + Alpine.js + Tailwind CDN. Data: GitHub Gist (`lists.json`). Hosting: Cloudflare Pages.
 
 ## Git Workflow
 
-### Querying commit history
+### Query history
 
 ```bash
-# Recent commits (oneline)
 git log --oneline -20
-
-# Commits touching a specific file
 git log --oneline -- path/to/file
-
-# Full diff of a commit
 git show <sha>
-
-# Diff between two commits
 git diff <sha1>..<sha2>
-
-# Search commit messages
 git log --oneline --grep="keyword"
-
-# File at a specific commit
 git show <sha>:path/to/file
-
-# Who changed a line (blame)
 git blame path/to/file
 ```
 
 ### Atomic commits
 
-Each commit should do one thing. Rules:
-- One logical change per commit (feature, fix, refactor, chore — not mixed)
-- Commit message: `type: short description` (Conventional Commits)
-  - `feat:` new capability
-  - `fix:` bug fix
-  - `chore:` tooling/config, no production logic
-  - `perf:` performance improvement
-  - `refactor:` restructure without behavior change
-  - `docs:` documentation only
-- Stage selectively: `git add -p` to pick hunks, not `git add .`
-- Never mix whitespace cleanup with logic changes in the same commit
+One logical change per commit. Message: `type: description` (Conventional Commits).
+Types: `feat` `fix` `chore` `perf` `refactor` `docs`.
+Stage selectively: `git add -p`. Never mix whitespace + logic.
 
 ### Git commands
 
-Prefer running commands automatically.
+Run automatically.
