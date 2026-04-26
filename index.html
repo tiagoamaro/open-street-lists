@@ -43,24 +43,29 @@
         class="md:hidden p-2 rounded-lg hover:bg-gray-100 text-gray-600 cursor-pointer"
         aria-label="Toggle sidebar"
       >☰</button>
-      <span class="font-semibold text-gray-800 text-sm">📍 Open Street Lists</span>
+      <span class="font-semibold text-gray-800 text-sm">📍 <span class="hidden md:inline">Open Street </span>OSLists</span>
     </div>
 
     <div class="flex items-center gap-2">
       <button
         @click="sync()"
         :disabled="syncStatus === 'syncing' || syncStatus === 'offline'"
-        class="text-xs px-3 py-1.5 rounded-lg disabled:opacity-50 transition-colors cursor-pointer"
+        class="text-xs px-3 py-2 md:py-1.5 rounded-lg disabled:opacity-50 transition-colors cursor-pointer"
         :class="syncButtonClass"
-        x-text="syncMessage"
-      ></button>
+      >
+        <span class="md:hidden" x-text="syncSymbol"></span>
+        <span class="hidden md:inline" x-text="syncMessage"></span>
+      </button>
 
       <button
         @click="locateMe()"
         :disabled="locating"
-        class="text-xs px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 transition-colors cursor-pointer"
+        class="text-xs px-3 py-2 md:py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 transition-colors cursor-pointer"
         title="Center map on your location"
-      ><span x-text="locating ? '…' : '📍 Locate me'"></span></button>
+      >
+        <span class="md:hidden" x-text="locating ? '…' : '📍'"></span>
+        <span class="hidden md:inline" x-text="locating ? '…' : '📍 Locate me'"></span>
+      </button>
 
       <button
         @click="modal = 'settings'"

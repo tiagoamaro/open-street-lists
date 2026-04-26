@@ -81,6 +81,17 @@ document.addEventListener('alpine:init', () => {
       }[this.syncStatus] ?? '🔄 Sync';
     },
 
+    get syncSymbol() {
+      return {
+        idle:    '🔄',
+        syncing: '🔄',
+        synced:  '✓',
+        error:   '⚠',
+        dirty:   '🔄',
+        offline: '📵',
+      }[this.syncStatus] ?? '🔄';
+    },
+
     get syncButtonClass() {
       return {
         idle:    'bg-blue-600 text-white hover:bg-blue-700',
