@@ -32,6 +32,29 @@ const MapController = (() => {
     map.on('click', (e) => {
       if (onMapClick) onMapClick(e.latlng.lat, e.latlng.lng);
     });
+
+    addWorldZoomControl();
+  }
+
+  /** Adds a "zoom to world" button below Leaflet's native zoom control. */
+  function addWorldZoomControl() {
+    const WorldZoom = L.Control.extend({
+      options: { position: 'topleft' },
+      onAdd() {
+        const btn = L.DomUtil.create('button', 'leaflet-bar leaflet-control osl-world-zoom');
+        btn.title = 'Zoom to world';
+        btn.setAttribute('aria-label', 'Zoom to world');
+        btn.innerHTML = '🌍';
+        btn.style.cssText = 'display:block;width:34px;height:34px;line-height:34px;font-size:18px;text-align:center;cursor:pointer;background:#fff;border:1.5px solid #aaa;border-radius:6px;box-shadow:0 1px 4px rgba(0,0,0,0.2);';
+        L.DomEvent.on(btn, 'click', (e) => {
+          L.DomEvent.stopPropagation(e);
+          map.flyTo([20, 0], 2, { duration: 0.8 });
+        });
+        L.DomEvent.disableClickPropagation(btn);
+        return btn;
+      },
+    });
+    new WorldZoom().addTo(map);
   }
 
   /**
