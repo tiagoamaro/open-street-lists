@@ -123,7 +123,7 @@ const MapController = (() => {
    * @param {number} lng
    */
   function flyTo(lat, lng) {
-    map.flyTo([lat, lng], 15, { duration: 0.6 });
+    map.flyTo([lat, lng], 18, { duration: 0.6 });
   }
 
   let searchMarker = null;
