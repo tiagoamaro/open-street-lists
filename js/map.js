@@ -7,6 +7,9 @@ const MapController = (() => {
   let map = null;
   let layerGroups = {};
 
+  // Caches one DivIcon per list (keyed by list.id) — invalidated when color/icon changes.
+  const iconCache = {};
+
   /** Callback fired when the user clicks an empty spot on the map. */
   let onMapClick = null;
 
@@ -43,19 +46,32 @@ const MapController = (() => {
     lists.forEach((list) => {
       if (!list.visible || !list.items.length) return;
 
-      const group = L.layerGroup().addTo(map);
-      layerGroups[list.id] = group;
+      // One cluster group per list so lists stay visually separate.
+      const cluster = L.markerClusterGroup({
+        maxClusterRadius: 40,
+        showCoverageOnHover: false,
+      });
+
+      // Cache icon per list — same color+emoji for all items in a list.
+      const cacheKey = `${list.id}:${list.color}:${list.icon}`;
+      if (!iconCache[list.id] || iconCache[list.id].key !== cacheKey) {
+        iconCache[list.id] = { key: cacheKey, icon: buildPinIcon(list) };
+      }
+      const icon = iconCache[list.id].icon;
 
       list.items.forEach((item) => {
-        const marker = L.marker([item.lat, item.lng], { icon: buildPinIcon(list) });
+        const marker = L.marker([item.lat, item.lng], { icon });
 
         marker.on('click', (e) => {
           L.DomEvent.stopPropagation(e);
           callbacks.onOpen(list, item);
         });
 
-        group.addLayer(marker);
+        cluster.addLayer(marker);
       });
+
+      cluster.addTo(map);
+      layerGroups[list.id] = cluster;
     });
   }
 
