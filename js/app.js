@@ -38,6 +38,13 @@ document.addEventListener('alpine:init', () => {
       google_maps_url: '',
     },
 
+    // ── Reorder ───────────────────────────────────────────────────────
+    reorderingLists: false,
+    reorderingListId: null,
+    _itemContainers: {},
+    _sortableInstances: {},
+    _listsSortable: null,
+
     // ── Sync ──────────────────────────────────────────────────────────
     syncStatus: 'idle', // idle | syncing | synced | error | dirty | offline
     syncVersion: 0,
@@ -105,6 +112,7 @@ document.addEventListener('alpine:init', () => {
           this.lists = data.lists || [];
           this.syncVersion = data.syncVersion || 0;
           this.sortAllLists();
+          this.ensurePositions();
         } catch (_) { /* ignore corrupt cache */ }
       }
 
@@ -122,9 +130,12 @@ document.addEventListener('alpine:init', () => {
       return JSON.parse(localStorage.getItem('osl_settings') || '{}');
     },
 
-    /** Sorts a list's items newest-first in place. Items without created_at sort last. */
+    /** Sorts a list's items by position; falls back to newest-first by created_at for legacy data. */
     sortItems(list) {
       list.items.sort((a, b) => {
+        if (a.position !== undefined && b.position !== undefined) return a.position - b.position;
+        if (a.position !== undefined) return -1;
+        if (b.position !== undefined) return 1;
         if (!a.created_at && !b.created_at) return 0;
         if (!a.created_at) return 1;
         if (!b.created_at) return -1;
@@ -133,7 +144,23 @@ document.addEventListener('alpine:init', () => {
     },
 
     sortAllLists() {
+      this.lists.sort((a, b) => {
+        if (a.position !== undefined && b.position !== undefined) return a.position - b.position;
+        if (a.position !== undefined) return -1;
+        if (b.position !== undefined) return 1;
+        return 0;
+      });
       this.lists.forEach((l) => this.sortItems(l));
+    },
+
+    /** Stamps position on any list or item that lacks one (migration for existing data). */
+    ensurePositions() {
+      this.lists.forEach((list, li) => {
+        if (list.position === undefined) list.position = li;
+        list.items.forEach((item, ii) => {
+          if (item.position === undefined) item.position = ii;
+        });
+      });
     },
 
     saveLocal() {
@@ -162,6 +189,7 @@ document.addEventListener('alpine:init', () => {
         this.lists = data.lists || [];
         this.syncVersion = data.syncVersion || 0;
         this.sortAllLists();
+        this.ensurePositions();
         localStorage.setItem('osl_data', JSON.stringify(data));
         this.syncStatus = 'synced';
         this.renderMap();
@@ -193,6 +221,7 @@ document.addEventListener('alpine:init', () => {
           if (remoteSyncVersion > this.syncVersion) {
             this.lists = remote.lists || [];
             this.sortAllLists();
+            this.ensurePositions();
             this.renderMap();
           }
 
@@ -268,6 +297,7 @@ document.addEventListener('alpine:init', () => {
           color: this.formList.color,
           visible: true,
           items: [],
+          position: this.lists.length,
         });
       }
 
@@ -360,12 +390,22 @@ document.addEventListener('alpine:init', () => {
       const { name, lat, lng } = this.formItem;
       if (!name.trim() || lat === '' || lng === '') return;
 
-      // Preserve created_at on edit; stamp now on create.
+      // Preserve created_at and position on edit; stamp now / append at end on create.
       let createdAt = new Date().toISOString();
+      let position;
       if (this.editMode) {
         const origList = this.lists.find((l) => l.id === this.formItem.originalListId);
         const existing = origList?.items.find((i) => i.id === this.editItemId);
         if (existing?.created_at) createdAt = existing.created_at;
+        // Keep position only when staying in the same list
+        if (existing?.position !== undefined && this.formItem.listId === this.formItem.originalListId) {
+          position = existing.position;
+        }
+      }
+      if (position === undefined) {
+        // New item or moved to a different list — append at end
+        const targetList = this.lists.find((l) => l.id === this.formItem.listId);
+        position = targetList ? targetList.items.length : 0;
       }
 
       const item = {
@@ -378,6 +418,7 @@ document.addEventListener('alpine:init', () => {
           this.formItem.google_maps_url.trim() ||
           `https://maps.google.com/?q=${lat},${lng}`,
         created_at: createdAt,
+        position,
       };
 
       if (this.editMode) {
@@ -493,6 +534,75 @@ document.addEventListener('alpine:init', () => {
       this.searchQuery = '';
       this.searchResults = [];
       MapController.clearSearchMarker();
+    },
+
+    // ── Drag-and-drop reordering ──────────────────────────────────────
+    registerItemContainer(el, listId) {
+      this._itemContainers[listId] = el;
+    },
+
+    toggleListReorder() {
+      this.reorderingLists = !this.reorderingLists;
+      if (this.reorderingLists) {
+        this.$nextTick(() => {
+          const el = this.$refs.listsContainer;
+          if (!el) return;
+          this._listsSortable = Sortable.create(el, {
+            animation: 150,
+            handle: '.list-drag-handle',
+            draggable: '[data-list-id]',
+            onEnd: (evt) => this.onListReorder(evt),
+          });
+        });
+      } else {
+        this._listsSortable?.destroy();
+        this._listsSortable = null;
+      }
+    },
+
+    toggleItemReorder(listId) {
+      if (this.reorderingListId === listId) {
+        this._sortableInstances[listId]?.destroy();
+        delete this._sortableInstances[listId];
+        this.reorderingListId = null;
+      } else {
+        if (this.reorderingListId !== null) {
+          this._sortableInstances[this.reorderingListId]?.destroy();
+          delete this._sortableInstances[this.reorderingListId];
+        }
+        this.reorderingListId = listId;
+        this.$nextTick(() => {
+          const el = this._itemContainers[listId];
+          if (!el) return;
+          this._sortableInstances[listId] = Sortable.create(el, {
+            animation: 150,
+            handle: '.item-drag-handle',
+            draggable: '[data-item-id]',
+            onEnd: (evt) => this.onItemReorder(listId, evt),
+          });
+        });
+      }
+    },
+
+    onListReorder() {
+      // Read new order directly from DOM to avoid template-element index offsets
+      const el = this.$refs.listsContainer;
+      const ordered = Array.from(el.querySelectorAll('[data-list-id]'))
+        .map((node) => node.dataset.listId);
+      this.lists = ordered.map((id) => this.lists.find((l) => l.id === id)).filter(Boolean);
+      this.lists.forEach((list, i) => { list.position = i; });
+      this.saveLocal();
+    },
+
+    onItemReorder(listId) {
+      const list = this.lists.find((l) => l.id === listId);
+      if (!list) return;
+      const el = this._itemContainers[listId];
+      const ordered = Array.from(el.querySelectorAll('[data-item-id]'))
+        .map((node) => node.dataset.itemId);
+      list.items = ordered.map((id) => list.items.find((i) => i.id === id)).filter(Boolean);
+      list.items.forEach((item, i) => { item.position = i; });
+      this.saveLocal();
     },
 
     // ── Geolocation ───────────────────────────────────────────────────
