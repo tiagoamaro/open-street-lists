@@ -305,7 +305,7 @@ document.addEventListener('alpine:init', () => {
     },
 
     // ── Item CRUD ─────────────────────────────────────────────────────
-    openAddItem(listId = null, lat = '', lng = '') {
+    openAddItem(listId = null, lat = '', lng = '', name = '') {
       if (!this.lists.length) {
         alert('Create a list first before adding places.');
         return;
@@ -321,7 +321,7 @@ document.addEventListener('alpine:init', () => {
       this.formItem = {
         listId: defaultListId,
         originalListId: defaultListId,
-        name: '',
+        name: name,
         lat: fLat,
         lng: fLng,
         notes: '',
@@ -483,7 +483,7 @@ document.addEventListener('alpine:init', () => {
       MapController.flyTo(lat, lng);
       MapController.showSearchMarker(lat, lng, result.display_name, (lat, lng) => {
         MapController.clearSearchMarker();
-        this.openAddItem(null, lat, lng);
+        this.openAddItem(null, lat, lng, result.display_name);
       });
       this.searchQuery = '';
       this.searchResults = [];
