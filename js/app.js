@@ -65,24 +65,24 @@ document.addEventListener('alpine:init', () => {
     // ── Computed ──────────────────────────────────────────────────────
     get syncMessage() {
       return {
-        idle:    'Not synced',
-        syncing: 'Syncing…',
-        synced:  'Synced',
-        error:   'Sync error',
-        dirty:   'Unsaved changes',
-        offline: 'Offline',
-      }[this.syncStatus] ?? '';
+        idle:    '🔄 Sync',
+        syncing: '🔄 Syncing…',
+        synced:  '✓ Synced',
+        error:   '⚠ Error',
+        dirty:   '🔄 Sync',
+        offline: '📵 Offline',
+      }[this.syncStatus] ?? '🔄 Sync';
     },
 
-    get syncStatusClass() {
+    get syncButtonClass() {
       return {
-        idle:    'bg-gray-100 text-gray-500',
-        syncing: 'bg-blue-100 text-blue-700',
-        synced:  'bg-green-100 text-green-700',
-        error:   'bg-red-100 text-red-700',
-        dirty:   'bg-yellow-100 text-yellow-700',
-        offline: 'bg-orange-100 text-orange-700',
-      }[this.syncStatus] ?? '';
+        idle:    'bg-blue-600 text-white hover:bg-blue-700',
+        syncing: 'bg-blue-600 text-white',
+        synced:  'bg-green-600 text-white hover:bg-green-700',
+        error:   'bg-red-600 text-white hover:bg-red-700',
+        dirty:   'bg-blue-600 text-white hover:bg-blue-700',
+        offline: 'bg-orange-500 text-white hover:bg-orange-600',
+      }[this.syncStatus] ?? 'bg-blue-600 text-white hover:bg-blue-700';
     },
 
     // ── Lifecycle ─────────────────────────────────────────────────────
