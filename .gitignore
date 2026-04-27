@@ -1,5 +1,6 @@
 Takeout/
 lists.json
 .claude/
-# asdf local version pin — not supported by Cloudflare Pages
+# Ruby/asdf local version pins — not supported by Cloudflare Pages
 .tool-versions
+.ruby-version
