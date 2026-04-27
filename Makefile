@@ -38,7 +38,8 @@ selenium: install
 ifndef INPUT
 	$(error INPUT is required. Usage: make selenium INPUT=path/to/file.csv)
 endif
-	cd $(SCRIPTS_DIR) && $(BUNDLE) ruby import_takeout_selenium.rb $(abspath $(INPUT)) $(abspath $(OUTPUT)) $(FLAGS)
+	cd $(SCRIPTS_DIR) && bundle exec ruby import_takeout_selenium.rb \
+	  "$$(realpath "$(INPUT)")" "$(CURDIR)/$(OUTPUT)" $(FLAGS)
 
 ## Run the plain CSV importer (no browser, no gems needed)
 ## Required: INPUT=path/to/file.csv
@@ -47,7 +48,7 @@ csv:
 ifndef INPUT
 	$(error INPUT is required. Usage: make csv INPUT=path/to/file.csv)
 endif
-	ruby $(SCRIPTS_DIR)/import_takeout_csv.rb $(INPUT) $(OUTPUT) \
+	ruby $(SCRIPTS_DIR)/import_takeout_csv.rb "$(INPUT)" "$(OUTPUT)" \
 	  $(if $(GOOGLE_API_KEY),--google-api-key=$(GOOGLE_API_KEY),) \
 	  $(if $(NO_GEOCODE),--no-geocode,)
 
@@ -58,7 +59,7 @@ json:
 ifndef INPUT
 	$(error INPUT is required. Usage: make json INPUT=path/to/file.json)
 endif
-	ruby $(SCRIPTS_DIR)/import_takeout_json.rb $(INPUT) $(OUTPUT) \
+	ruby $(SCRIPTS_DIR)/import_takeout_json.rb "$(INPUT)" "$(OUTPUT)" \
 	  $(if $(GOOGLE_API_KEY),--google-api-key=$(GOOGLE_API_KEY),) \
 	  $(if $(NO_GEOCODE),--no-geocode,)
 
