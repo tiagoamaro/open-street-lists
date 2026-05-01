@@ -11,17 +11,20 @@ js/gist.js         GitHub Gist sync (read/write lists.json)
 css/leaflet.css    Leaflet styles
 icons/icon.svg     App icon
 manifest.json      PWA manifest
-Makefile           Dev tasks
-bin/               Import scripts (symlinks → google_takeout_scripts/)
+wrangler.jsonc     Cloudflare Workers deployment config
+Makefile           Import script runner (targets: install, csv, json, selenium, help)
+lists.json         Local data file (mirrors GitHub Gist)
 google_takeout_scripts/
   import_takeout_csv.rb      CSV importer (stdlib only)
   import_takeout_json.rb     GeoJSON importer (stdlib only)
-  import_takeout_selenium.rb Selenium-based scraper
+  import_takeout_selenium.rb Selenium-based scraper (requires gems)
+  Gemfile / Gemfile.lock     Selenium gem deps
 Takeout/           Local Google Takeout sample data
 .tool-versions     asdf Ruby version pin
+.ruby-version      Ruby version pin (rbenv/chruby compat)
 ```
 
-Stack: Leaflet.js + Alpine.js + Tailwind CDN. Data: GitHub Gist (`lists.json`). Hosting: Cloudflare Pages.
+Stack: Leaflet.js + Alpine.js + Tailwind CDN. Data: GitHub Gist (`lists.json`). Hosting: Cloudflare Pages (Workers Assets).
 
 ## Git Workflow
 
