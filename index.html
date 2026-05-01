@@ -28,9 +28,6 @@
   <!-- SortableJS -->
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
 
-  <!-- Emoji Mart -->
-  <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-mart@5/dist/browser.js"></script>
-
   <!-- Tailwind v4 browser build -->
   <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 </head>
@@ -451,7 +448,7 @@
 
           <div>
             <label class="block text-xs font-medium text-gray-700 mb-2">Icon</label>
-            <div class="flex flex-wrap gap-1.5 items-center" x-data="{ pickerOpen: false }">
+            <div class="flex flex-wrap gap-1.5 items-center">
               <template x-for="emoji in iconOptions" :key="emoji">
                 <button
                   @click="formList.icon = emoji"
@@ -460,23 +457,16 @@
                   x-text="emoji"
                 ></button>
               </template>
-              <div class="relative">
-                <button
-                  type="button"
-                  @click="pickerOpen = !pickerOpen"
-                  class="text-xl p-1.5 rounded-lg hover:bg-gray-100 border-2 transition-colors cursor-pointer"
-                  :class="!iconOptions.includes(formList.icon) && formList.icon ? 'border-blue-500 bg-blue-50' : 'border-gray-300'"
-                  title="Custom emoji"
-                >✏️</button>
-                <div
-                  x-show="pickerOpen"
-                  @click.outside="pickerOpen = false"
-                  x-effect="if (pickerOpen) { $nextTick(() => { const el = $el.querySelector('em-emoji-picker'); if (el && !el._listenerAdded) { el.addEventListener('emoji-click', e => { formList.icon = e.detail.unicode; pickerOpen = false; }); el._listenerAdded = true; } }) }"
-                  class="fixed md:absolute z-50 inset-x-2 bottom-4 md:inset-x-auto md:bottom-full md:mb-1 md:left-0 flex justify-center md:block"
-                >
-                  <em-emoji-picker style="width:100%;max-width:352px;--em-border-radius:12px"></em-emoji-picker>
-                </div>
-              </div>
+              <input
+                type="text"
+                x-model="formList.icon"
+                placeholder="emoji"
+                maxlength="2"
+                autocomplete="off"
+                class="w-14 text-center text-xl p-1.5 rounded-lg border-2 transition-colors outline-none"
+                :class="!iconOptions.includes(formList.icon) && formList.icon ? 'border-blue-500 bg-blue-50' : 'border-gray-300'"
+                title="Custom emoji"
+              >
             </div>
           </div>
 
