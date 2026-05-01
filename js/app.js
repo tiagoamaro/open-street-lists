@@ -59,6 +59,9 @@ document.addEventListener('alpine:init', () => {
     searchOpen: false,
     _searchTimer: null,
 
+    // ── List item search ──────────────────────────────────────────────
+    listItemSearch: '',
+
     // ── Pickers ───────────────────────────────────────────────────────
     iconOptions: [
       '📍','🍽️','🏖️','🛍️','🏛️','🌳','🏠','⭐','❤️','🎯',
@@ -90,6 +93,24 @@ document.addEventListener('alpine:init', () => {
         dirty:   '🔄',
         offline: '📵',
       }[this.syncStatus] ?? '🔄';
+    },
+
+    /** Returns [{list, item}] matching listItemSearch across name and notes. */
+    get listItemSearchResults() {
+      const q = this.listItemSearch.trim().toLowerCase();
+      if (!q) return [];
+      const results = [];
+      for (const list of this.lists) {
+        for (const item of list.items) {
+          if (
+            item.name.toLowerCase().includes(q) ||
+            (item.notes && item.notes.toLowerCase().includes(q))
+          ) {
+            results.push({ list, item });
+          }
+        }
+      }
+      return results;
     },
 
     get syncButtonClass() {
