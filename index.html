@@ -478,6 +478,19 @@
                   :style="`background:${color}`"
                 ></button>
               </template>
+              <label
+                class="w-7 h-7 rounded-full border-4 transition-all cursor-pointer overflow-hidden flex items-center justify-center"
+                :class="!colorOptions.includes(formList.color) ? 'border-gray-800 scale-110' : 'border-white shadow'"
+                title="Custom color"
+              >
+                <input
+                  type="color"
+                  class="w-10 h-10 cursor-pointer opacity-0 absolute"
+                  :value="formList.color"
+                  @input="formList.color = $event.target.value"
+                >
+                <span class="w-7 h-7 rounded-full block" :style="`background:${!colorOptions.includes(formList.color) ? formList.color : 'conic-gradient(red,yellow,lime,cyan,blue,magenta,red)'}`"></span>
+              </label>
             </div>
           </div>
         </div>
