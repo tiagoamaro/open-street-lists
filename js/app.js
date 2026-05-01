@@ -26,7 +26,7 @@ document.addEventListener('alpine:init', () => {
     settingsError: '',
     settingsSuccess: '',
 
-    formList: { name: '', icon: '📍', color: '#3b82f6' },
+    formList: { name: '', icon: '', color: '#3b82f6' },
 
     formItem: {
       listId: '',
