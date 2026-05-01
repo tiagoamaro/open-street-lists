@@ -38,6 +38,10 @@ document.addEventListener('alpine:init', () => {
       google_maps_url: '',
     },
 
+    // ── Sidebar resize ───────────────────────────────────────────────
+    sidebarWidth: parseInt(localStorage.getItem('sidebarWidth') ?? '288', 10),
+    _sidebarResizing: false,
+
     // ── Reorder ───────────────────────────────────────────────────────
     reorderingLists: false,
     reorderingListId: null,
@@ -154,6 +158,17 @@ document.addEventListener('alpine:init', () => {
 
         const { token, gistId } = this.formSettings;
         if (token && gistId) this.loadFromGist();
+
+        // Sidebar drag-to-resize (desktop only)
+        const onMouseMove = (e) => {
+          if (!this._sidebarResizing) return;
+          const w = Math.min(600, Math.max(180, e.clientX));
+          this.sidebarWidth = w;
+          localStorage.setItem('sidebarWidth', w);
+        };
+        const onMouseUp = () => { this._sidebarResizing = false; };
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
       });
     },
 

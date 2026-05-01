@@ -87,10 +87,11 @@
 
     <!-- ── Sidebar ─────────────────────────────────────────────────── -->
     <aside
-      class="w-72 bg-white border-r border-gray-200 flex flex-col overflow-hidden z-20
+      class="bg-white border-r border-gray-200 flex flex-col overflow-hidden z-20
              absolute inset-y-0 left-0 transition-transform duration-200
              md:relative md:translate-x-0"
       :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
+      :style="window.innerWidth < 768 ? 'width:100%' : ('width:' + sidebarWidth + 'px; min-width:180px; max-width:600px')"
     >
       <!-- Sidebar header -->
       <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100 flex-shrink-0">
@@ -269,7 +270,16 @@
           </div>
         </template>
       </div>
+
     </aside>
+
+    <!-- Drag handle (desktop only) -->
+    <div
+      class="hidden md:block w-1 cursor-col-resize z-30 flex-shrink-0
+             hover:bg-blue-400/40 transition-colors select-none"
+      @mousedown.prevent="_sidebarResizing = true"
+      title="Drag to resize sidebar"
+    ></div>
 
     <!-- ── Map + search overlay ──────────────────────────────────── -->
     <div class="flex-1 relative z-0">
