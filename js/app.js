@@ -49,6 +49,9 @@ document.addEventListener('alpine:init', () => {
     _sortableInstances: {},
     _listsSortable: null,
 
+    // ── Theme ─────────────────────────────────────────────────────────
+    darkMode: false,
+
     // ── Sync ──────────────────────────────────────────────────────────
     syncStatus: 'idle', // idle | syncing | synced | error | dirty | offline
     syncVersion: 0,
@@ -138,6 +141,9 @@ document.addEventListener('alpine:init', () => {
         };
       }
 
+      this.darkMode = localStorage.getItem('osl_dark') === 'true';
+      this._applyDark();
+
       const cachedData = localStorage.getItem('osl_data');
       if (cachedData) {
         try {
@@ -167,6 +173,17 @@ document.addEventListener('alpine:init', () => {
         document.addEventListener('mousemove', onMouseMove);
         document.addEventListener('mouseup', onMouseUp);
       });
+    },
+
+    // ── Theme ─────────────────────────────────────────────────────────
+    toggleDark() {
+      this.darkMode = !this.darkMode;
+      localStorage.setItem('osl_dark', this.darkMode);
+      this._applyDark();
+    },
+
+    _applyDark() {
+      document.documentElement.classList.toggle('dark', this.darkMode);
     },
 
     // ── Internal helpers ──────────────────────────────────────────────

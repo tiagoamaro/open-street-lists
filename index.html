@@ -30,6 +30,53 @@
 
   <!-- Tailwind v4 browser build -->
   <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+
+  <style>
+    :root {
+      --bg:             #f9fafb;
+      --surface:        #ffffff;
+      --surface-hover:  #f9fafb;
+      --surface-muted:  #f3f4f6;
+      --border:         #e5e7eb;
+      --text:           #111827;
+      --text-secondary: #374151;
+      --text-muted:     #6b7280;
+    }
+
+    html.dark {
+      --bg:             #0f172a;
+      --surface:        #1e293b;
+      --surface-hover:  #263348;
+      --surface-muted:  #334155;
+      --border:         #334155;
+      --text:           #f1f5f9;
+      --text-secondary: #cbd5e1;
+      --text-muted:     #94a3b8;
+    }
+
+    html.dark body                         { background: var(--bg); color: var(--text); }
+    html.dark .bg-white                    { background: var(--surface); }
+    html.dark .bg-gray-50                  { background: var(--bg); }
+    html.dark .bg-gray-100                 { background: var(--surface-muted); }
+    html.dark .border-gray-200,
+    html.dark .border-gray-100             { border-color: var(--border); }
+    html.dark .border-gray-300            { border-color: var(--border); }
+    html.dark .text-gray-900,
+    html.dark .text-gray-800               { color: var(--text); }
+    html.dark .text-gray-700               { color: var(--text-secondary); }
+    html.dark .text-gray-600,
+    html.dark .text-gray-500,
+    html.dark .text-gray-400               { color: var(--text-muted); }
+    html.dark .hover\:bg-gray-50:hover     { background: var(--surface-hover); }
+    html.dark .hover\:bg-gray-100:hover    { background: var(--surface-muted); }
+    html.dark .hover\:bg-gray-200:hover    { background: var(--border); }
+    html.dark input,
+    html.dark select,
+    html.dark textarea                     { background: var(--surface-muted); color: var(--text); border-color: var(--border); }
+    html.dark ::placeholder                { color: var(--text-muted); }
+    html.dark .leaflet-tile-pane           { filter: invert(1) hue-rotate(180deg); }
+    html.dark .leaflet-container           { background: #0f172a; }
+  </style>
 </head>
 
 <body x-data="app" class="h-screen flex flex-col bg-gray-50 overflow-hidden">
@@ -66,6 +113,12 @@
         <span class="md:hidden" x-text="locating ? '…' : '📍'"></span>
         <span class="hidden md:inline" x-text="locating ? '…' : '📍 Locate me'"></span>
       </button>
+
+      <button
+        @click="toggleDark()"
+        class="text-xs px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors cursor-pointer"
+        :title="darkMode ? 'Light mode' : 'Dark mode'"
+      ><span x-text="darkMode ? '☀️' : '🌙'"></span></button>
 
       <button
         @click="modal = 'settings'"
