@@ -370,6 +370,19 @@
           <span class="text-gray-400 text-sm select-none">🔍</span>
         </div>
 
+        <!-- Paste Google Maps link -->
+        <button
+          @click="pasteGoogleMapsLink()"
+          class="text-xs bg-white text-gray-600 rounded-lg shadow-md px-2.5 py-1 hover:bg-blue-50 transition-colors cursor-pointer"
+          title="Paste a copied Google Maps link to add it as a place"
+        >📋 Paste Maps link</button>
+        <p
+          x-show="pasteLinkError"
+          x-text="pasteLinkError"
+          @click="pasteLinkError = ''"
+          class="text-xs bg-amber-50 text-amber-700 border border-amber-200 rounded-lg px-2.5 py-1 max-w-64 text-right cursor-pointer"
+        ></p>
+
         <!-- Geoapify key missing warning -->
         <template x-if="formSettings.searchEngine === 'geoapify' && !formSettings.geoapifyKey">
           <button
@@ -640,11 +653,14 @@
               type="url"
               autocomplete="off"
               x-model="formItem.google_maps_url"
-              placeholder="Auto-generated from coordinates"
+              @input="onGoogleMapsUrlInput()"
+              placeholder="Paste a Google Maps link to autofill"
               class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
             <div class="flex items-center justify-between mt-1">
-              <p class="text-xs text-gray-400">Auto-generated. Override with a specific business link if needed.</p>
+              <p x-show="linkParse === null" class="text-xs text-gray-400">Auto-generated. Paste a Google Maps place link to autofill name & coordinates.</p>
+              <p x-show="linkParse === 'ok'" class="text-xs text-green-600">✓ Filled from link</p>
+              <p x-show="linkParse === 'short'" class="text-xs text-amber-600">Short link — open it and copy the full URL from the address bar.</p>
               <button
                 x-show="formItem.google_maps_url"
                 @click="window.open(formItem.google_maps_url, '_blank', 'noopener')"
@@ -708,6 +724,7 @@
 
   <!-- ── Scripts (order matters: our code before Alpine) ──────────── -->
   <script src="js/gist.js"></script>
+  <script src="js/gmaps.js"></script>
   <script src="js/map.js"></script>
   <script src="js/app.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3/dist/cdn.min.js"></script>

@@ -69,6 +69,10 @@ document.addEventListener('alpine:init', () => {
     // ── List item search ──────────────────────────────────────────────
     listItemSearch: '',
 
+    // ── Google Maps link paste ────────────────────────────────────────
+    linkParse: null, // null | 'ok' | 'short'
+    pasteLinkError: '',
+
     // ── Pickers ───────────────────────────────────────────────────────
     iconOptions: ['✈️','⭐','📍','❤️'],
     colorOptions: [
@@ -396,7 +400,7 @@ document.addEventListener('alpine:init', () => {
     },
 
     // ── Item CRUD ─────────────────────────────────────────────────────
-    openAddItem(listId = null, lat = '', lng = '', name = '') {
+    openAddItem(listId = null, lat = '', lng = '', name = '', url = '') {
       if (!this.lists.length) {
         alert('Create a list first before adding places.');
         return;
@@ -404,6 +408,7 @@ document.addEventListener('alpine:init', () => {
 
       this.editMode = false;
       this.editItemId = null;
+      this.linkParse = null;
 
       const defaultListId = listId || this.lists[0].id;
       const fLat = lat !== '' ? parseFloat(Number(lat).toFixed(6)) : '';
@@ -416,7 +421,7 @@ document.addEventListener('alpine:init', () => {
         lat: fLat,
         lng: fLng,
         notes: '',
-        google_maps_url: fLat !== '' ? `https://maps.google.com/?q=${fLat},${fLng}` : '',
+        google_maps_url: url || (fLat !== '' ? `https://maps.google.com/?q=${fLat},${fLng}` : ''),
       };
       this.modal = 'item';
     },
@@ -428,6 +433,7 @@ document.addEventListener('alpine:init', () => {
 
       this.editMode = true;
       this.editItemId = itemId;
+      this.linkParse = null;
       this.formItem = {
         listId,
         originalListId: listId,
@@ -445,6 +451,44 @@ document.addEventListener('alpine:init', () => {
       if (lat !== '' && lng !== '') {
         this.formItem.google_maps_url = `https://maps.google.com/?q=${lat},${lng}`;
       }
+    },
+
+    /** Autofills name/lat/lng when a parseable Google Maps link lands in the URL field. */
+    onGoogleMapsUrlInput() {
+      const url = this.formItem.google_maps_url.trim();
+      if (!url) { this.linkParse = null; return; }
+      if (GMaps.isShortLink(url)) { this.linkParse = 'short'; return; }
+      const parsed = GMaps.parseGoogleMapsUrl(url);
+      if (!parsed) { this.linkParse = null; return; }
+      if (parsed.name && !this.formItem.name.trim()) this.formItem.name = parsed.name;
+      if (parsed.lat !== null) {
+        this.formItem.lat = parsed.lat;
+        this.formItem.lng = parsed.lng;
+      }
+      this.linkParse = parsed.lat !== null || parsed.name ? 'ok' : null;
+    },
+
+    /** Reads a Google Maps link from the clipboard and opens the Add Place form pre-filled. */
+    async pasteGoogleMapsLink() {
+      this.pasteLinkError = '';
+      let text = '';
+      try {
+        text = (await navigator.clipboard.readText()).trim();
+      } catch (_) {
+        this.pasteLinkError = 'Clipboard blocked — paste the link inside the Add Place form instead.';
+        return;
+      }
+      if (GMaps.isShortLink(text)) {
+        this.pasteLinkError = 'Short link — open it in a tab and copy the full URL from the address bar.';
+        return;
+      }
+      const parsed = GMaps.parseGoogleMapsUrl(text);
+      if (!parsed || parsed.lat === null) {
+        this.pasteLinkError = 'No coordinates found in the copied link.';
+        return;
+      }
+      MapController.flyTo(parsed.lat, parsed.lng);
+      this.openAddItem(null, parsed.lat, parsed.lng, parsed.name, text);
     },
 
     saveItem() {
