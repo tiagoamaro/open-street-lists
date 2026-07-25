@@ -266,18 +266,26 @@ document.addEventListener('alpine:init', () => {
       MapController.flyTo(item.lat, item.lng);
     },
 
+    /**
+     * Adopts a payload fetched from the Gist as the local state.
+     * Keeps syncVersion, ordering and the cache in step so a later sync()
+     * compares against the version we actually hold.
+     */
+    _applyRemoteData(data) {
+      this.lists = data.lists || [];
+      this.syncVersion = data.syncVersion || 0;
+      this.sortAllLists();
+      this.ensurePositions();
+      localStorage.setItem('osl_data', JSON.stringify(data));
+      this.renderMap();
+    },
+
     async loadFromGist() {
       const { token, gistId } = this.formSettings;
       try {
         this.syncStatus = 'syncing';
-        const data = await Gist.load(gistId, token);
-        this.lists = data.lists || [];
-        this.syncVersion = data.syncVersion || 0;
-        this.sortAllLists();
-        this.ensurePositions();
-        localStorage.setItem('osl_data', JSON.stringify(data));
+        this._applyRemoteData(await Gist.load(gistId, token));
         this.syncStatus = 'synced';
-        this.renderMap();
       } catch (_) {
         this.syncStatus = navigator.onLine ? 'error' : 'offline';
       }
@@ -338,11 +346,9 @@ document.addEventListener('alpine:init', () => {
       if (this.formSettings.gistId) {
         try {
           const data = await Gist.load(this.formSettings.gistId, this.formSettings.token);
-          this.lists = data.lists || [];
-          this.saveLocal();
+          this._applyRemoteData(data);
           this.syncStatus = 'synced';
           this.settingsSuccess = 'Connected! Data loaded from Gist.';
-          this.renderMap();
         } catch (e) {
           this.settingsError = `Could not load Gist: ${e.message}`;
         }
