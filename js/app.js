@@ -41,6 +41,7 @@ document.addEventListener('alpine:init', () => {
     // ── Sidebar resize ───────────────────────────────────────────────
     sidebarWidth: parseInt(localStorage.getItem('sidebarWidth') ?? '288', 10),
     _sidebarResizing: false,
+    _windowListeners: [],
 
     // ── Reorder ───────────────────────────────────────────────────────
     reorderingLists: false,
@@ -174,9 +175,24 @@ document.addEventListener('alpine:init', () => {
           localStorage.setItem('sidebarWidth', w);
         };
         const onMouseUp = () => { this._sidebarResizing = false; };
-        document.addEventListener('mousemove', onMouseMove);
-        document.addEventListener('mouseup', onMouseUp);
+
+        this._on(document, 'mousemove', onMouseMove);
+        this._on(document, 'mouseup', onMouseUp);
       });
+    },
+
+    /** Registers a listener and remembers it so destroy() can detach it. */
+    _on(target, event, handler) {
+      target.addEventListener(event, handler);
+      this._windowListeners.push({ target, event, handler });
+    },
+
+    /** Alpine teardown hook — detaches document/window listeners. */
+    destroy() {
+      this._windowListeners.forEach(({ target, event, handler }) => {
+        target.removeEventListener(event, handler);
+      });
+      this._windowListeners = [];
     },
 
     // ── Theme ─────────────────────────────────────────────────────────
