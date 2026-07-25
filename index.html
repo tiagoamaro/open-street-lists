@@ -144,7 +144,7 @@
              absolute inset-y-0 left-0 transition-transform duration-200
              md:relative md:translate-x-0"
       :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
-      :style="window.innerWidth < 768 ? 'width:100%' : ('width:' + sidebarWidth + 'px; min-width:180px; max-width:600px')"
+      :style="isDesktop ? ('width:' + sidebarWidth + 'px; min-width:180px; max-width:600px') : 'width:100%'"
     >
       <!-- Sidebar header -->
       <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100 flex-shrink-0">
@@ -195,7 +195,7 @@
               :style="`background:${result.list.color}`"
             ></span>
             <button
-              @click="flyToItem(result.item); sidebarOpen = window.innerWidth >= 768"
+              @click="flyToItem(result.item); sidebarOpen = isDesktop"
               class="flex-1 text-left min-w-0"
             >
               <div class="text-xs font-medium text-gray-800 truncate" x-text="result.item.name"></div>
@@ -296,7 +296,7 @@
                       :class="reorderingListId === list.id ? 'item-drag-handle cursor-grab text-gray-400 hover:text-gray-600' : 'text-transparent'"
                     >⠿</span>
                     <button
-                      @click="flyToItem(item); sidebarOpen = window.innerWidth >= 768"
+                      @click="flyToItem(item); sidebarOpen = isDesktop"
                       class="flex-1 text-left text-xs text-gray-700 hover:text-blue-600 truncate cursor-pointer"
                       x-text="item.name"
                     ></button>

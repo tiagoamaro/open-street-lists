@@ -9,6 +9,7 @@ document.addEventListener('alpine:init', () => {
     // ── Data ──────────────────────────────────────────────────────────
     lists: [],
     expandedLists: [],
+    isDesktop: window.innerWidth >= 768,
     sidebarOpen: window.innerWidth >= 768,
 
     // ── Modal state ───────────────────────────────────────────────────
@@ -175,9 +176,12 @@ document.addEventListener('alpine:init', () => {
           localStorage.setItem('sidebarWidth', w);
         };
         const onMouseUp = () => { this._sidebarResizing = false; };
+        // Keeps the sidebar's width/visibility rules in sync across resize and rotation.
+        const onResize = () => { this.isDesktop = window.innerWidth >= 768; };
 
         this._on(document, 'mousemove', onMouseMove);
         this._on(document, 'mouseup', onMouseUp);
+        this._on(window, 'resize', onResize);
       });
     },
 
