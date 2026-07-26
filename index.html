@@ -354,6 +354,9 @@
             <option value="nominatim">OSM</option>
             <option value="photon">Photon</option>
             <option value="geoapify">Geoapify</option>
+            <option value="locationiq">LocationIQ</option>
+            <option value="mapbox">Mapbox</option>
+            <option value="here">HERE</option>
           </select>
           <div class="w-px h-3 bg-gray-200 flex-shrink-0"></div>
           <input
@@ -388,12 +391,30 @@
           class="text-xs bg-amber-50 text-amber-700 border border-amber-200 rounded-lg px-2.5 py-1 max-w-64 text-right cursor-pointer"
         ></p>
 
-        <!-- Geoapify key missing warning -->
+        <!-- API key missing warning -->
         <template x-if="formSettings.searchEngine === 'geoapify' && !formSettings.geoapifyKey">
           <button
             @click="modal = 'settings'"
             class="text-xs bg-amber-50 text-amber-700 border border-amber-200 rounded-lg px-2.5 py-1 hover:bg-amber-100 transition-colors cursor-pointer"
           >⚠️ Set Geoapify API key</button>
+        </template>
+        <template x-if="formSettings.searchEngine === 'locationiq' && !formSettings.locationiqKey">
+          <button
+            @click="modal = 'settings'"
+            class="text-xs bg-amber-50 text-amber-700 border border-amber-200 rounded-lg px-2.5 py-1 hover:bg-amber-100 transition-colors cursor-pointer"
+          >⚠️ Set LocationIQ API key</button>
+        </template>
+        <template x-if="formSettings.searchEngine === 'mapbox' && !formSettings.mapboxKey">
+          <button
+            @click="modal = 'settings'"
+            class="text-xs bg-amber-50 text-amber-700 border border-amber-200 rounded-lg px-2.5 py-1 hover:bg-amber-100 transition-colors cursor-pointer"
+          >⚠️ Set Mapbox API key</button>
+        </template>
+        <template x-if="formSettings.searchEngine === 'here' && !formSettings.hereKey">
+          <button
+            @click="modal = 'settings'"
+            class="text-xs bg-amber-50 text-amber-700 border border-amber-200 rounded-lg px-2.5 py-1 hover:bg-amber-100 transition-colors cursor-pointer"
+          >⚠️ Set HERE API key</button>
         </template>
 
         <!-- Results dropdown -->
@@ -465,7 +486,15 @@
                   <option value="nominatim">OpenStreetMap / Nominatim — free, no key</option>
                   <option value="photon">Photon by Komoot — free, no key, better POI ranking</option>
                   <option value="geoapify">Geoapify — richer data, API key required</option>
+                  <option value="locationiq">LocationIQ — Nominatim-compatible, API key required</option>
+                  <option value="mapbox">Mapbox — strong BR street coverage, API key required</option>
+                  <option value="here">HERE — strong BR address coverage, API key required</option>
                 </select>
+                <p class="text-xs text-gray-400 mt-1">
+                  Searches for a Brazilian CEP (e.g. 01310-100) resolve directly via BrasilAPI,
+                  regardless of the engine selected above. Other searches are biased toward
+                  the current map view.
+                </p>
               </div>
 
               <div x-show="formSettings.searchEngine === 'geoapify'">
@@ -478,6 +507,46 @@
                   class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                 <p class="text-xs text-gray-400 mt-1">Free tier: 3,000 requests/day. Get a key at geoapify.com.</p>
+              </div>
+
+              <div x-show="formSettings.searchEngine === 'locationiq'">
+                <label class="block text-xs font-medium text-gray-700 mb-1">LocationIQ API Key</label>
+                <input
+                  type="password"
+                  autocomplete="off"
+                  x-model="formSettings.locationiqKey"
+                  placeholder="Your LocationIQ API key…"
+                  class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                <p class="text-xs text-gray-400 mt-1">Free tier: 5,000 requests/day. Get a key at locationiq.com.</p>
+              </div>
+
+              <div x-show="formSettings.searchEngine === 'mapbox'">
+                <label class="block text-xs font-medium text-gray-700 mb-1">Mapbox API Key</label>
+                <input
+                  type="password"
+                  autocomplete="off"
+                  x-model="formSettings.mapboxKey"
+                  placeholder="Your Mapbox access token…"
+                  class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                <p class="text-xs text-gray-400 mt-1">
+                  Free tier: 100,000 requests/month. Get a token at mapbox.com. Mapbox's terms
+                  expect search results to be shown on a Mapbox map — this app uses OSM tiles,
+                  so check your own compliance before relying on this engine.
+                </p>
+              </div>
+
+              <div x-show="formSettings.searchEngine === 'here'">
+                <label class="block text-xs font-medium text-gray-700 mb-1">HERE API Key</label>
+                <input
+                  type="password"
+                  autocomplete="off"
+                  x-model="formSettings.hereKey"
+                  placeholder="Your HERE API key…"
+                  class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                <p class="text-xs text-gray-400 mt-1">Free tier: 1,000 requests/day. Get a key at developer.here.com.</p>
               </div>
             </div>
           </div>
