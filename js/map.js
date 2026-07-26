@@ -200,5 +200,29 @@ const MapController = (() => {
     }
   }
 
-  return { init, renderMarkers, flyToBounds, flyTo, showSearchMarker, clearSearchMarker };
+  /**
+   * Returns the current map viewport, used to bias place search toward
+   * what's on screen. Returns null before the map has been initialized.
+   * @returns {{lat: number, lng: number, west: number, south: number,
+   *            east: number, north: number, zoom: number}|null}
+   */
+  function getViewport() {
+    if (!map) return null;
+    const center = map.getCenter();
+    const bounds = map.getBounds();
+    return {
+      lat: center.lat,
+      lng: center.lng,
+      west: bounds.getWest(),
+      south: bounds.getSouth(),
+      east: bounds.getEast(),
+      north: bounds.getNorth(),
+      zoom: map.getZoom(),
+    };
+  }
+
+  return {
+    init, renderMarkers, flyToBounds, flyTo, showSearchMarker, clearSearchMarker,
+    getViewport,
+  };
 })();
