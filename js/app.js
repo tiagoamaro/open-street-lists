@@ -23,7 +23,10 @@ document.addEventListener('alpine:init', () => {
     markerItem: null,
 
     // ── Form models ───────────────────────────────────────────────────
-    formSettings: { token: '', gistId: '', searchEngine: 'nominatim', geoapifyKey: '' },
+    formSettings: {
+      token: '', gistId: '', searchEngine: 'nominatim',
+      geoapifyKey: '', locationiqKey: '', mapboxKey: '', hereKey: '',
+    },
     settingsError: '',
     settingsSuccess: '',
 
@@ -144,6 +147,9 @@ document.addEventListener('alpine:init', () => {
           gistId: s.gistId || '',
           searchEngine: s.searchEngine || 'nominatim',
           geoapifyKey: s.geoapifyKey || '',
+          locationiqKey: s.locationiqKey || '',
+          mapboxKey: s.mapboxKey || '',
+          hereKey: s.hereKey || '',
         };
       }
 
@@ -595,11 +601,23 @@ document.addEventListener('alpine:init', () => {
     async doSearch() {
       this.searching = true;
       try {
+        const q = this.searchQuery.trim();
+        if (/^\d{5}-?\d{3}$/.test(q)) {
+          const handled = await this._searchCep(q);
+          if (handled) return;
+        }
+
         const engine = this.formSettings.searchEngine || 'nominatim';
         if (engine === 'photon') {
           await this._searchPhoton();
         } else if (engine === 'geoapify') {
           await this._searchGeoapify();
+        } else if (engine === 'locationiq') {
+          await this._searchLocationIQ();
+        } else if (engine === 'mapbox') {
+          await this._searchMapbox();
+        } else if (engine === 'here') {
+          await this._searchHere();
         } else {
           await this._searchNominatim();
         }
@@ -610,19 +628,90 @@ document.addEventListener('alpine:init', () => {
       }
     },
 
+    /** Returns the current map viewport as provider-agnostic bias params, or null. */
+    _viewportBias() {
+      return MapController.getViewport();
+    },
+
+    /**
+     * Resolves a Brazilian CEP (postal code) to a place, using BrasilAPI.
+     * Falls back to a regular text search (structured address) via the
+     * selected engine when BrasilAPI has no coordinates for it.
+     * @param {string} cep
+     * @returns {Promise<boolean>} true if it handled the query (results set,
+     *   even if empty); false to let the caller fall through to normal search.
+     */
+    async _searchCep(cep) {
+      const digits = cep.replace(/\D/g, '');
+      try {
+        const res = await fetch(`https://brasilapi.com.br/api/cep/v2/${digits}`);
+        if (!res.ok) return false;
+        const data = await res.json();
+
+        const coords = data.location?.coordinates;
+        if (coords?.latitude && coords?.longitude) {
+          this.searchResults = [{
+            place_id: `cep-${digits}`,
+            display_name: [data.street, data.neighborhood, data.city, data.state]
+              .filter(Boolean).join(', '),
+            lat: coords.latitude,
+            lon: coords.longitude,
+          }];
+          return true;
+        }
+
+        // No coordinates from BrasilAPI — geocode the resolved address instead.
+        const address = [data.street, data.neighborhood, data.city, data.state, 'Brasil']
+          .filter(Boolean).join(', ');
+        if (!address) return false;
+        this.searchQuery = address;
+        return false;
+      } catch (_) {
+        return false;
+      }
+    },
+
     async _searchNominatim() {
-      const q = encodeURIComponent(this.searchQuery.trim());
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=6&addressdetails=0`,
-        { headers: { Accept: 'application/json' } }
-      );
-      // Nominatim already returns { place_id, display_name, lat, lon }
+      await this._searchNominatimLike('https://nominatim.openstreetmap.org/search');
+    },
+
+    async _searchLocationIQ() {
+      const key = this.formSettings.locationiqKey;
+      if (!key) { this.searchResults = []; return; }
+      await this._searchNominatimLike('https://us1.locationiq.com/v1/search', { key });
+    },
+
+    /**
+     * Shared implementation for Nominatim-compatible providers (Nominatim
+     * itself and LocationIQ), which return the same JSON shape.
+     * @param {string} baseUrl
+     * @param {Object} [extraParams]  provider-specific query params (e.g. LocationIQ's key)
+     */
+    async _searchNominatimLike(baseUrl, extraParams = {}) {
+      const viewport = this._viewportBias();
+      const params = new URLSearchParams({
+        q: this.searchQuery.trim(),
+        format: 'json',
+        limit: '6',
+        addressdetails: '0',
+        'accept-language': 'pt-BR',
+        ...extraParams,
+      });
+      if (viewport) {
+        params.set('viewbox', `${viewport.west},${viewport.north},${viewport.east},${viewport.south}`);
+      }
+      const res = await fetch(`${baseUrl}?${params.toString()}`, {
+        headers: { Accept: 'application/json' },
+      });
+      // Nominatim-compatible responses already return { place_id, display_name, lat, lon }
       this.searchResults = await res.json();
     },
 
     async _searchPhoton() {
       const q = encodeURIComponent(this.searchQuery.trim());
-      const res = await fetch(`https://photon.komoot.io/api/?q=${q}&limit=6`);
+      const viewport = this._viewportBias();
+      const bias = viewport ? `&lat=${viewport.lat}&lon=${viewport.lng}` : '';
+      const res = await fetch(`https://photon.komoot.io/api/?q=${q}&limit=6&lang=pt${bias}`);
       const data = await res.json();
       this.searchResults = (data.features || []).map((f, i) => ({
         place_id: `photon-${i}-${f.geometry.coordinates.join(',')}`,
@@ -637,8 +726,10 @@ document.addEventListener('alpine:init', () => {
       const key = this.formSettings.geoapifyKey;
       if (!key) { this.searchResults = []; return; }
       const q = encodeURIComponent(this.searchQuery.trim());
+      const viewport = this._viewportBias();
+      const bias = viewport ? `&bias=proximity:${viewport.lng},${viewport.lat}` : '';
       const res = await fetch(
-        `https://api.geoapify.com/v1/geocode/autocomplete?text=${q}&limit=6&apiKey=${key}`
+        `https://api.geoapify.com/v1/geocode/autocomplete?text=${q}&limit=6&lang=pt&apiKey=${key}${bias}`
       );
       const data = await res.json();
       this.searchResults = (data.features || []).map((f) => ({
@@ -647,6 +738,44 @@ document.addEventListener('alpine:init', () => {
         lat: f.properties.lat,
         lon: f.properties.lon,
       }));
+    },
+
+    async _searchMapbox() {
+      const key = this.formSettings.mapboxKey;
+      if (!key) { this.searchResults = []; return; }
+      const q = encodeURIComponent(this.searchQuery.trim());
+      const viewport = this._viewportBias();
+      const bias = viewport ? `&proximity=${viewport.lng},${viewport.lat}` : '';
+      const res = await fetch(
+        `https://api.mapbox.com/search/geocode/v6/forward?q=${q}&country=br&language=pt&limit=6&access_token=${key}${bias}`
+      );
+      const data = await res.json();
+      this.searchResults = (data.features || []).map((f) => ({
+        place_id: f.properties.mapbox_id || `${f.properties.coordinates.latitude},${f.properties.coordinates.longitude}`,
+        display_name: f.properties.full_address || f.properties.name,
+        lat: f.properties.coordinates.latitude,
+        lon: f.properties.coordinates.longitude,
+      }));
+    },
+
+    async _searchHere() {
+      const key = this.formSettings.hereKey;
+      if (!key) { this.searchResults = []; return; }
+      const q = encodeURIComponent(this.searchQuery.trim());
+      const viewport = this._viewportBias();
+      const at = viewport ? `${viewport.lat},${viewport.lng}` : '0,0';
+      const res = await fetch(
+        `https://autosuggest.search.hereapi.com/v1/autosuggest?q=${q}&at=${at}&lang=pt-BR&limit=6&apiKey=${key}`
+      );
+      const data = await res.json();
+      this.searchResults = (data.items || [])
+        .filter((it) => it.position)
+        .map((it) => ({
+          place_id: it.id,
+          display_name: it.address?.label || it.title,
+          lat: it.position.lat,
+          lon: it.position.lng,
+        }));
     },
 
     selectSearchResult(result) {
